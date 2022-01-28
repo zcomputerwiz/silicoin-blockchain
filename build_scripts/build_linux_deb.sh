@@ -1,14 +1,17 @@
 #!/bin/bash
 
+APP_BUNDLEID="net.silicoin.blockchain"
+APP_NAME="SIT"
+
 if [ ! "$1" ]; then
   echo "This script requires either amd64 of arm64 as an argument"
 	exit 1
 elif [ "$1" = "amd64" ]; then
 	PLATFORM="$1"
-	DIR_NAME="chia-blockchain-linux-x64"
+	DIR_NAME="$APP_NAME-linux-x64"
 else
 	PLATFORM="$1"
-	DIR_NAME="chia-blockchain-linux-arm64"
+	DIR_NAME="$APP_NAME-linux-arm64"
 fi
 
 pip install setuptools_scm
@@ -22,6 +25,7 @@ if [ ! "$CHIA_INSTALLER_VERSION" ]; then
 	CHIA_INSTALLER_VERSION="0.0.0"
 fi
 echo "Chia Installer Version is: $CHIA_INSTALLER_VERSION"
+DEB_NAME="$APP_NAME-$CHIA_INSTALLER_VERSION"
 
 echo "Installing npm and electron packagers"
 npm install electron-packager -g
@@ -59,8 +63,8 @@ fi
 cp package.json package.json.orig
 jq --arg VER "$CHIA_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
-electron-packager . chia-blockchain --asar.unpack="**/daemon/**" --platform=linux \
---icon=src/assets/img/Chia.icns --overwrite --app-bundle-id=net.chia.blockchain \
+electron-packager . $APP_NAME --asar.unpack="**/daemon/**" --platform=linux \
+--icon=src/assets/img/Chia.icns --overwrite --app-bundle-id=$APP_BUNDLEID \
 --appVersion=$CHIA_INSTALLER_VERSION
 LAST_EXIT_CODE=$?
 
@@ -75,7 +79,7 @@ fi
 mv $DIR_NAME ../build_scripts/dist/
 cd ../build_scripts || exit
 
-echo "Create chia-$CHIA_INSTALLER_VERSION.deb"
+echo "Create $DEB_NAME.deb"
 rm -rf final_installer
 mkdir final_installer
 electron-installer-debian --src dist/$DIR_NAME/ --dest final_installer/ \

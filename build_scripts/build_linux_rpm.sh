@@ -1,15 +1,18 @@
 #!/bin/bash
 
+APP_BUNDLEID="net.silicoin.blockchain"
+APP_NAME="SIT"
+
 if [ ! "$1" ]; then
   echo "This script requires either amd64 of arm64 as an argument"
 	exit 1
 elif [ "$1" = "amd64" ]; then
 	#PLATFORM="$1"
 	REDHAT_PLATFORM="x86_64"
-	DIR_NAME="chia-blockchain-linux-x64"
+	DIR_NAME="$APP_NAME-linux-x64"
 else
 	#PLATFORM="$1"
-	DIR_NAME="chia-blockchain-linux-arm64"
+	DIR_NAME="$APP_NAME-linux-arm64"
 fi
 
 pip install setuptools_scm
@@ -23,6 +26,7 @@ if [ ! "$CHIA_INSTALLER_VERSION" ]; then
 	CHIA_INSTALLER_VERSION="0.0.0"
 fi
 echo "Chia Installer Version is: $CHIA_INSTALLER_VERSION"
+RPM_NAME="$APP_NAME-$CHIA_INSTALLER_VERSION"
 
 echo "Installing npm and electron packagers"
 npm install electron-packager -g
@@ -60,8 +64,8 @@ fi
 cp package.json package.json.orig
 jq --arg VER "$CHIA_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
-electron-packager . chia-blockchain --asar.unpack="**/daemon/**" --platform=linux \
---icon=src/assets/img/Chia.icns --overwrite --app-bundle-id=net.chia.blockchain \
+electron-packager . $APP_NAME --asar.unpack="**/daemon/**" --platform=linux \
+--icon=src/assets/img/Chia.icns --overwrite --app-bundle-id=$APP_BUNDLEID \
 --appVersion=$CHIA_INSTALLER_VERSION
 LAST_EXIT_CODE=$?
 
@@ -77,7 +81,7 @@ mv $DIR_NAME ../build_scripts/dist/
 cd ../build_scripts || exit
 
 if [ "$REDHAT_PLATFORM" = "x86_64" ]; then
-	echo "Create chia-blockchain-$CHIA_INSTALLER_VERSION.rpm"
+	echo "Create $RPM_NAME.rpm"
 
 	# shellcheck disable=SC2046
 	NODE_ROOT="$(dirname $(dirname $(which node)))"
@@ -91,8 +95,8 @@ if [ "$REDHAT_PLATFORM" = "x86_64" ]; then
 	# shellcheck disable=SC2086
 	sed -i "s#throw new Error('Please upgrade to RPM 4.13.*#console.warn('You are using RPM < 4.13')\n      return { requires: [ 'gtk3', 'libnotify', 'nss', 'libXScrnSaver', 'libXtst', 'xdg-utils', 'at-spi2-core', 'libdrm', 'mesa-libgbm', 'libxcb' ] }#g" $NODE_ROOT/lib/node_modules/electron-installer-redhat/src/dependencies.js
 
-  electron-installer-redhat --src dist/$DIR_NAME/ --dest final_installer/ \
-  --arch "$REDHAT_PLATFORM" --options.version $CHIA_INSTALLER_VERSION \
+electron-installer-redhat --src dist/$DIR_NAME/ --dest final_installer/ \
+--arch "$REDHAT_PLATFORM" --options.version $CHIA_INSTALLER_VERSION \
   --license ../LICENSE
   LAST_EXIT_CODE=$?
   if [ "$LAST_EXIT_CODE" -ne 0 ]; then

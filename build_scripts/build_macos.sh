@@ -1,5 +1,9 @@
 #!/bin/bash
 
+APP_BUNDLEID="net.silicoin.blockchain"
+APP_NAME="SIT"
+DIR_NAME=$APP_NAME-darwin-x64
+
 set -euo pipefail
 
 pip install setuptools_scm
@@ -52,8 +56,8 @@ brew install jq
 cp package.json package.json.orig
 jq --arg VER "$CHIA_INSTALLER_VERSION" '.version=$VER' package.json > temp.json && mv temp.json package.json
 
-electron-packager . Chia --asar.unpack="**/daemon/**" --platform=darwin \
---icon=src/assets/img/Chia.icns --overwrite --app-bundle-id=net.chia.blockchain \
+electron-packager . $APP_NAME --asar.unpack="**/daemon/**" --platform=darwin \
+--icon=src/assets/img/Chia.icns --overwrite --app-bundle-id=$APP_BUNDLEID \
 --appVersion=$CHIA_INSTALLER_VERSION
 LAST_EXIT_CODE=$?
 
@@ -66,7 +70,7 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 fi
 
 if [ "$NOTARIZE" == true ]; then
-  electron-osx-sign Chia-darwin-x64/Chia.app --platform=darwin \
+  electron-osx-sign $DIR_NAME/$APP_NAME.app --platform=darwin \
   --hardened-runtime=true --provisioning-profile=chiablockchain.provisionprofile \
   --entitlements=entitlements.mac.plist --entitlements-inherit=entitlements.mac.plist \
   --no-gatekeeper-assess
@@ -77,13 +81,13 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 	exit $LAST_EXIT_CODE
 fi
 
-mv Chia-darwin-x64 ../build_scripts/dist/
+mv $DIR_NAME ../build_scripts/dist/
 cd ../build_scripts || exit
 
-DMG_NAME="Chia-$CHIA_INSTALLER_VERSION.dmg"
-echo "Create $DMG_NAME"
+DMG_NAME="$APP_NAME-$CHIA_INSTALLER_VERSION"
+echo "Create $DMG_NAME.dmg"
 mkdir final_installer
-electron-installer-dmg dist/Chia-darwin-x64/Chia.app Chia-$CHIA_INSTALLER_VERSION \
+electron-installer-dmg dist/$DIR_NAME/$APP_NAME.app $DMG_NAME \
 --overwrite --out final_installer
 LAST_EXIT_CODE=$?
 if [ "$LAST_EXIT_CODE" -ne 0 ]; then
@@ -92,9 +96,9 @@ if [ "$LAST_EXIT_CODE" -ne 0 ]; then
 fi
 
 if [ "$NOTARIZE" == true ]; then
-	echo "Notarize $DMG_NAME on ci"
+	echo "Notarize $DMG_NAME.dmg on ci"
 	cd final_installer || exit
-  notarize-cli --file=$DMG_NAME --bundle-id net.chia.blockchain \
+  notarize-cli --file="$DMG_NAME.dmg" --bundle-id $APP_BUNDLEID \
 	--username "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD"
   echo "Notarization step complete"
 else
