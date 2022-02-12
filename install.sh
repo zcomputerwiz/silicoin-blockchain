@@ -118,6 +118,7 @@ python -m pip install wheel
 # This remains in case there is a diversion of binary wheels
 python -m pip install --extra-index-url https://pypi.chia.net/simple/ miniupnpc==2.2.2
 python -m pip install -e . --extra-index-url https://pypi.chia.net/simple/
+python -m pip install nest_asyncio
 
 echo ""
 echo "Silicoin blockchain install.sh complete."
