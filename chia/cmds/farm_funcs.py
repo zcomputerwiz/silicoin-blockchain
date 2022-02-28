@@ -18,6 +18,8 @@ from chia.util.default_root import DEFAULT_ROOT_PATH
 from chia.util.ints import uint16, uint64
 from chia.util.misc import format_bytes, format_minutes
 from chia.util.network import is_localhost
+from chia.util.keychain import Keychain
+from chia.wallet.derive_keys import master_sk_to_farmer_sk
 
 SECONDS_PER_BLOCK = (24 * 3600) / 4608
 
@@ -208,6 +210,7 @@ async def summary(
     wallet_rpc_port: Optional[int],
     harvester_rpc_port: Optional[int],
     farmer_rpc_port: Optional[int],
+    staking_detail: Optional[int],
 ) -> None:
     config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
     all_harvesters = await get_harvesters(farmer_rpc_port)
@@ -261,13 +264,20 @@ async def summary(
                 harvesters_remote[ip][harvester["connection"]["node_id"]] = harvester
 
         def process_harvesters(harvester_peers_in: dict):
+            if staking_detail >= 1:
+                keychain = Keychain()
+                private_keys = keychain.get_all_private_keys()
+                for sk, seed in private_keys:
+                    ph = create_puzzlehash_for_pk(hexstr_to_bytes(str(master_sk_to_farmer_sk(sk).get_g1())))
+                    PlotStats.staking_addresses[ph] += 0
             for harvester_peer_id, plots in harvester_peers_in.items():
                 total_plot_size_harvester = sum(map(lambda x: x["file_size"], plots["plots"]))
                 PlotStats.total_plot_size += total_plot_size_harvester
                 PlotStats.total_plots += len(plots["plots"])
-                for plot in plots["plots"]:
-                    ph = create_puzzlehash_for_pk(hexstr_to_bytes(plot["farmer_public_key"]))
-                    PlotStats.staking_addresses[ph] += 1
+                if staking_detail >= 3:
+                    for plot in plots["plots"]:
+                        ph = create_puzzlehash_for_pk(hexstr_to_bytes(plot["farmer_public_key"]))
+                        PlotStats.staking_addresses[ph] += 1
                 print(f"   {len(plots['plots'])} plots of size: {format_bytes(total_plot_size_harvester)}")
 
         if len(harvesters_local) > 0:
@@ -282,14 +292,24 @@ async def summary(
         print("Total size of plots: ", end="")
         print(format_bytes(PlotStats.total_plot_size))
 
-        print("Staking addresses:")
-        address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
-        for k, v in sorted(PlotStats.staking_addresses.items(), key=(lambda tup: tup[1]), reverse=True):
-            balance = await get_ph_balance(rpc_port, k)
-            balance /= Decimal(10 ** 12)
-            # query balance
-            ph = encode_puzzle_hash(k, address_prefix)
-            print(f"  {ph} (balance: {balance}, plots: {v})")
+        if staking_detail >= 0 and staking_detail <= 3:
+            print("Staking addresses:")
+            address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
+            for k, v in sorted(PlotStats.staking_addresses.items(), key=(lambda tup: tup[1]), reverse=True):
+                ph = encode_puzzle_hash(k, address_prefix)
+                balance = None
+                if staking_detail >= 2:
+                    # query balance
+                    balance = await get_ph_balance(rpc_port, k)
+                    balance /= Decimal(10 ** 12)
+                if staking_detail == 1:
+                    print(f"  {ph}")
+                elif staking_detail == 2:
+                    print(f"  {ph} (balance: {balance})")
+                elif staking_detail == 3:
+                    print(f"  {ph} (balance: {balance}, plots: {v})")
+        else:
+            print(f"   Unknown staking detail level {staking_detail}.")
     else:
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
@@ -319,3 +339,10 @@ async def summary(
             print("For details on farmed rewards and fees you should run 'sit wallet show'")
     else:
         print("Note: log into your key using 'sit wallet show' to see rewards for each key")
+    
+    if staking_detail == 0:
+        print("For details on staking you should run 'sit farm summary -sd 1'")
+    elif staking_detail == 1:
+        print("For number of coins staked per address you should run 'sit farm summary -sd 2'")
+    elif staking_detail == 2:
+        print("For number of plots per address you should run 'sit farm summary -sd 3'")
