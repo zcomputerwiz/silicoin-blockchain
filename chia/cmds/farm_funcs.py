@@ -269,10 +269,10 @@ async def summary(
             if get_staking_addresses_from_keys:
                 keychain = Keychain()
                 private_keys = keychain.get_all_private_keys()
-                
+
                 for sk, seed in private_keys:
                     ph = create_puzzlehash_for_pk(hexstr_to_bytes(str(master_sk_to_farmer_sk(sk).get_g1())))
-                    
+
                     PlotStats.staking_addresses[ph] += 0
                     PlotStats.fingerprints[str(ph)] = sk.get_g1().get_fingerprint()
 
@@ -286,6 +286,9 @@ async def summary(
                         PlotStats.staking_addresses[ph] += 1
                 print(f"   {len(plots['plots'])} plots of size: {format_bytes(total_plot_size_harvester)}")
 
+        STAKING_INFO_CACHE_FILE = 'staking_info_cache.yaml'
+        staking_info_cache_path = config_path_for_filename(DEFAULT_ROOT_PATH, STAKING_INFO_CACHE_FILE)
+
         get_staking_addresses_from_keys = False
         get_staking_addresses_from_plots = False
         invalid_sa_option = False
@@ -298,13 +301,10 @@ async def summary(
             get_staking_addresses_from_keys = True
             get_staking_addresses_from_plots = True
         elif fetch_staking_addresses == 'n':
-            fetch_staking_addresses = None
-            
             if staking_info_cache_path.exists():
                 staking_info_cache_path.unlink()
         elif fetch_staking_addresses != None:
             invalid_sa_option = True
-            fetch_staking_addresses = None
 
         if len(harvesters_local) > 0:
             print(f"Local Harvester{'s' if len(harvesters_local) > 1 else ''}")
@@ -320,10 +320,7 @@ async def summary(
 
         staking_info = None
 
-        STAKING_INFO_CACHE_FILE = 'staking_info_cache.yaml'
-        staking_info_cache_path = config_path_for_filename(DEFAULT_ROOT_PATH, STAKING_INFO_CACHE_FILE)
-
-        if fetch_staking_addresses != None:
+        if get_staking_addresses_from_keys or get_staking_addresses_from_plots:
             staking_info = {}
 
             for ph, plots in PlotStats.staking_addresses.items():
@@ -391,6 +388,6 @@ async def summary(
             print("For details on farmed rewards and fees you should run 'sit wallet show'")
     else:
         print("Note: log into your key using 'sit wallet show' to see rewards for each key")
-    
-    if fetch_staking_addresses == None or not show_staking_balance:
+
+    if fetch_staking_addresses == None and not show_staking_balance:
         print("For details on staking you should run 'sit farm summary -h'")
