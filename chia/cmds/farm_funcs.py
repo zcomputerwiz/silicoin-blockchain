@@ -293,7 +293,8 @@ async def summary(
         print(format_bytes(PlotStats.total_plot_size))
 
         if staking_detail >= 0 and staking_detail <= 3:
-            print("Staking addresses:")
+            if staking_detail > 0:
+                print("Staking addresses:")
             address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
             for k, v in sorted(PlotStats.staking_addresses.items(), key=(lambda tup: tup[1]), reverse=True):
                 ph = encode_puzzle_hash(k, address_prefix)
