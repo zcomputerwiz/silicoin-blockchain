@@ -50,31 +50,56 @@ def farm_cmd() -> None:
     show_default=True,
 )
 @click.option(
-    "-sd",
-    "--staking-detail",
+    "-sa",
+    "--staking-addresses",
     help=(
         """\b
-        Set the level of detail to display for staking information.
-        Higher detail levels will make this command run slower.
-        0 - Don't show staking information (default).
-        1 - Show staking addresses.
-        2 - Show staking addresses plus staked coins per address.
-        3 - Show staking addresses plus staked coins and plot count per address."""
+        Fetch staking addresses and cache them to
+        always be shown when running 'farm summary'.
+        You must rerun this command option when
+        adding/removing keys or plots to update the
+        cache, even across restarts.
+        
+        \b
+        n - Clear staking address cache.
+        k - Fetch staking addresses from keys. Does
+            not show plot counts.
+        p - Fetch staking addresses from plots. Does
+            not show staking addresses for keys
+            without plots.
+        a - Fetch staking addresses from keys and
+            plots. Shows plot counts and addresses
+            for keys without plots."""
     ),
-    type=int,
-    default=0
+    type=str,
+    default=None,
+    show_default=True,
+)
+@click.option(
+    "-sb",
+    "--staking-balance",
+    help=(
+        """\b
+        Show the balance of each staking address.
+        Requires staking info to be cached by
+        -sa/--staking-addresses beforehand."""
+    ),
+    is_flag=True,
+    type=bool,
+    default=False
 )
 def summary_cmd(
     rpc_port: Optional[int],
     wallet_rpc_port: Optional[int],
     harvester_rpc_port: Optional[int],
     farmer_rpc_port: Optional[int],
-    staking_detail: Optional[int],
+    staking_addresses: Optional[str],
+    staking_balance: Optional[bool],
 ) -> None:
     from .farm_funcs import summary
     import asyncio
 
-    asyncio.run(summary(rpc_port, wallet_rpc_port, harvester_rpc_port, farmer_rpc_port, staking_detail))
+    asyncio.run(summary(rpc_port, wallet_rpc_port, harvester_rpc_port, farmer_rpc_port, staking_addresses, staking_balance))
 
 
 @farm_cmd.command("challenges", short_help="Show the latest challenges")
