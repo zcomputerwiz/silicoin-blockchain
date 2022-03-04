@@ -274,16 +274,22 @@ async def summary(
                     ph = create_puzzlehash_for_pk(hexstr_to_bytes(str(master_sk_to_farmer_sk(sk).get_g1())))
 
                     PlotStats.staking_addresses[ph] += 0
-                    PlotStats.fingerprints[str(ph)] = sk.get_g1().get_fingerprint()
+                    PlotStats.fingerprints[ph] = sk.get_g1().get_fingerprint()
 
             for harvester_peer_id, plots in harvester_peers_in.items():
                 total_plot_size_harvester = sum(map(lambda x: x["file_size"], plots["plots"]))
                 PlotStats.total_plot_size += total_plot_size_harvester
                 PlotStats.total_plots += len(plots["plots"])
                 if get_staking_addresses_from_plots:
+                    farmer_public_keys = defaultdict(int)
+
                     for plot in plots["plots"]:
-                        ph = create_puzzlehash_for_pk(hexstr_to_bytes(plot["farmer_public_key"]))
-                        PlotStats.staking_addresses[ph] += 1
+                        farmer_public_key = plot["farmer_public_key"]
+                        farmer_public_keys[farmer_public_key] += 1
+
+                    for farmer_public_key, plot_count in farmer_public_keys.items():
+                        ph = create_puzzlehash_for_pk(hexstr_to_bytes(farmer_public_key))
+                        PlotStats.staking_addresses[ph] += plot_count
                 print(f"   {len(plots['plots'])} plots of size: {format_bytes(total_plot_size_harvester)}")
 
         STAKING_INFO_CACHE_FILE = 'staking_info_cache.yaml'
