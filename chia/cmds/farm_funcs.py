@@ -330,14 +330,14 @@ async def summary(
             staking_info = {}
 
             for ph, plots in PlotStats.staking_addresses.items():
-                ph = str(ph)
-                staking_info[ph] = {}
+                ph_str = str(ph)
+                staking_info[ph_str] = {}
 
                 if get_staking_addresses_from_keys:
-                    staking_info[ph]["fingerprint"] = PlotStats.fingerprints[ph]
+                    staking_info[ph_str]["fingerprint"] = PlotStats.fingerprints[ph]
 
                 if get_staking_addresses_from_plots:
-                    staking_info[ph]["plots"] = plots
+                    staking_info[ph_str]["plots"] = plots
 
             save_config(DEFAULT_ROOT_PATH, STAKING_INFO_CACHE_FILE, staking_info)
         elif staking_info_cache_path.exists():
