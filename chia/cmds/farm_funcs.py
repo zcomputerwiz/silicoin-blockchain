@@ -1,6 +1,7 @@
 from collections import defaultdict
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
+from datetime import datetime
 
 import aiohttp
 
@@ -210,8 +211,7 @@ async def summary(
     wallet_rpc_port: Optional[int],
     harvester_rpc_port: Optional[int],
     farmer_rpc_port: Optional[int],
-    fetch_staking_addresses: Optional[str],
-    show_staking_balance: Optional[bool],
+    staking_details: Optional[str],
 ) -> None:
     config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
     all_harvesters = await get_harvesters(farmer_rpc_port)
@@ -297,20 +297,30 @@ async def summary(
 
         get_staking_addresses_from_keys = False
         get_staking_addresses_from_plots = False
-        invalid_sa_option = False
+        get_staking_balances = False
+        invalid_options = ""
+        notices = []
+        
+        invalid_options_dict = defaultdict(bool)
 
-        if fetch_staking_addresses == 'k':
-            get_staking_addresses_from_keys = True
-        elif fetch_staking_addresses == 'p':
-            get_staking_addresses_from_plots = True
-        elif fetch_staking_addresses == 'a':
-            get_staking_addresses_from_keys = True
-            get_staking_addresses_from_plots = True
-        elif fetch_staking_addresses == 'n':
-            if staking_info_cache_path.exists():
-                staking_info_cache_path.unlink()
-        elif fetch_staking_addresses != None:
-            invalid_sa_option = True
+        for option in list(staking_details):
+            if option == 'k':
+                get_staking_addresses_from_keys = True
+            elif option == 'p':
+                get_staking_addresses_from_plots = True
+            elif option == 'n':
+                if staking_info_cache_path.exists():
+                    staking_info_cache_path.unlink()
+            elif option == 'b':
+                get_staking_balances = True
+            else:
+                invalid_options_dict[option] = True
+
+        if invalid_options_dict:
+            for option, _ in invalid_options_dict.items():
+                invalid_options += option
+
+            notices.append(f"    Invalid staking detail options: {invalid_options}")
 
         if len(harvesters_local) > 0:
             print(f"Local Harvester{'s' if len(harvesters_local) > 1 else ''}")
@@ -343,14 +353,32 @@ async def summary(
         elif staking_info_cache_path.exists():
             staking_info = load_config(DEFAULT_ROOT_PATH, STAKING_INFO_CACHE_FILE)
 
-        if invalid_sa_option:
-            print(f"   Invalid argument for -sa/--staking-addresses: {fetch_staking_addresses}")
+            cache_timestamp = staking_info_cache_path.stat().st_mtime
+            cache_datetime = datetime.fromtimestamp(cache_timestamp).strftime("%Y-%m-%d %H:%M:%S")
+
+            notices.append(
+                 "    The following staking information, with the exception of balances,\n"
+                f"      is fetched from a cache last updated at {cache_datetime}."
+            )
+
+        def print_staking_header():
+            print("Staking addresses:")
+
+            if notices:
+                print("  Attention:")
+
+                for notice in notices:
+                    print(notice)
 
         if staking_info == None:
-            if show_staking_balance:
-                print("   No staking addresses cached. See 'sit farm summary -h' for more info.")
+            if get_staking_balances or invalid_options:
+                if get_staking_balances:
+                    notices.append("    No staking addresses cached, you must fetch them to show staking balances.")
+
+                print_staking_header()
         else:
-            print("Staking addresses:")
+            print_staking_header()
+
             address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
             for ph, entry in staking_info.items():
                 ph = hexstr_to_bytes(ph)
@@ -360,11 +388,11 @@ async def summary(
                     print(f"    Fingerprint: {entry['fingerprint']}")
                 if "plots" in entry:
                     print(f"    Plots: {entry['plots']}")
-                if show_staking_balance:
+                if get_staking_balances:
                     # query balance
                     balance = await get_ph_balance(rpc_port, ph)
                     balance /= Decimal(10 ** 12)
-                    print(f"    Balance: {balance}")
+                    print(f"    Balance: {balance} SIT")
     else:
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
@@ -394,6 +422,3 @@ async def summary(
             print("For details on farmed rewards and fees you should run 'sit wallet show'")
     else:
         print("Note: log into your key using 'sit wallet show' to see rewards for each key")
-
-    if fetch_staking_addresses == None and not show_staking_balance:
-        print("For details on staking you should run 'sit farm summary -h'")
