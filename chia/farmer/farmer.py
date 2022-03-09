@@ -94,6 +94,20 @@ class Farmer:
         consensus_constants: ConsensusConstants,
         local_keychain: Optional[Keychain] = None,
     ):
+        pool_info_update_interval = UPDATE_POOL_INFO_INTERVAL
+        pool_farmer_info_update_interval = UPDATE_POOL_FARMER_INFO_INTERVAL
+        harvester_cache_update_interval = UPDATE_HARVESTER_CACHE_INTERVAL
+
+        if "update_intervals" in self.config:
+            update_intervals = self.config["update_intervals"]
+
+            if "pool_info" in update_intervals:
+                pool_info_update_interval = update_intervals["pool_info"]
+            if "pool_farmer_info" in update_intervals:
+                pool_farmer_info_update_interval = update_intervals["pool_farmer_info"]
+            if "harvester_cache" in update_intervals:
+                harvester_cache_update_interval = update_intervals["harvester_cache"]
+
         self.keychain_proxy: Optional[KeychainProxy] = None
         self.local_keychain = local_keychain
         self._root_path = root_path
@@ -116,7 +130,7 @@ class Farmer:
         self.cache_add_time: Dict[bytes32, uint64] = {}
 
         # Interval to request plots from connected harvesters
-        self.update_harvester_cache_interval = UPDATE_HARVESTER_CACHE_INTERVAL
+        self.update_harvester_cache_interval = harvester_cache_update_interval
 
         self.cache_clear_task: asyncio.Task
         self.update_pool_state_task: asyncio.Task
@@ -410,7 +424,7 @@ class Farmer:
                     pool_info = await self._pool_get_pool_info(pool_config)
                     if pool_info is not None and "error_code" not in pool_info:
                         pool_state["authentication_token_timeout"] = pool_info["authentication_token_timeout"]
-                        pool_state["next_pool_info_update"] = time.time() + UPDATE_POOL_INFO_INTERVAL
+                        pool_state["next_pool_info_update"] = time.time() + pool_info_update_interval
                         # Only update the first time from GET /pool_info, gets updated from GET /farmer later
                         if pool_state["current_difficulty"] is None:
                             pool_state["current_difficulty"] = pool_info["minimum_difficulty"]
@@ -431,7 +445,7 @@ class Farmer:
                                 if farmer_response is not None:
                                     pool_state["current_difficulty"] = farmer_response.current_difficulty
                                     pool_state["current_points"] = farmer_response.current_points
-                                    pool_state["next_farmer_update"] = time.time() + UPDATE_POOL_FARMER_INFO_INTERVAL
+                                    pool_state["next_farmer_update"] = time.time() + pool_farmer_info_update_interval
                             else:
                                 farmer_known = response["error_code"] != PoolErrorCode.FARMER_NOT_KNOWN.value
                                 self.log.error(
