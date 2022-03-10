@@ -340,9 +340,8 @@ async def summary(
         print("Estimated network space: Unknown")
 
     minutes = -1
+    est_plot_size = 0
     if blockchain_state is not None and all_harvesters is not None:
-        est_plot_size = 0
-
         for ph, capacity in PlotStats.capacities.items():
             est_plot_size += capacity / float(PlotStats.staking_factors[ph])
 
@@ -352,6 +351,9 @@ async def summary(
     if all_harvesters is not None and PlotStats.total_plots == 0:
         print("Expected time to win: Never (no plots)")
     else:
+        print("Estimated effective farm capacity: ", end="")
+        print(format_bytes(int(est_plot_size)))
+
         print("Expected time to win: " + format_minutes(minutes))
 
     if amounts is None:
