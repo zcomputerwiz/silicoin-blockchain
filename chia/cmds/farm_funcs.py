@@ -318,7 +318,10 @@ async def summary(
             print(f"  {encode_puzzle_hash(ph, address_prefix)}")
 
             print(f"    Fingerprint: {PlotStats.fingerprints[ph]}")
-            print(f"    Plots: {plot_count}")
+
+            print(f"    Plots: {plot_count} (", end="")
+            print(format_bytes(PlotStats.capacities[ph]), end="")
+            print(")")
 
             # query balance
             balance = await get_ph_balance(rpc_port, ph)
