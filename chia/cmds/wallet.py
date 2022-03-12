@@ -123,7 +123,7 @@ def send_cmd(
     asyncio.run(execute_with_wallet(wallet_rpc_port, fingerprint, extra_params, send))
 
 
-@wallet_cmd.command("send_from", short_help="Transfer all sit away from a specific puzzle hash")
+@wallet_cmd.command("send_from", short_help="Transfer all Silicoin away from a specific puzzle hash")
 @click.option(
     "-p",
     "--rpc-port",
