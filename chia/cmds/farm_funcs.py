@@ -340,7 +340,7 @@ async def summary(
         print("Estimated effective network space: ", end="")
         print(format_bytes(blockchain_state["space"]))
     else:
-        print("Estimated network space: Unknown")
+        print("Estimated effective network space: Unknown")
 
     minutes = -1
     est_plot_size = 0
