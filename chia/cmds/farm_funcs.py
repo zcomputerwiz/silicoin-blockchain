@@ -253,7 +253,6 @@ async def summary(
         capacities = defaultdict(int)
         staking_factors = defaultdict(int)
 
-    total_staking_balance = 0
     if all_harvesters is not None:
         harvesters_local: dict = {}
         harvesters_remote: dict = {}
