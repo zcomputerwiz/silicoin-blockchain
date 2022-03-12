@@ -259,7 +259,7 @@ async def do_recover_pool_nft(contract_hash: str, launcher_hash: str, fingerprin
 )
 @click.option(
     "--launcher-hash",
-    help="Set the launcher hash, you should get it from Silicoin wallet",
+    help="Set the launcher hash, you should get it from your Silicoin wallet",
     type=str,
     default=None,
 )
