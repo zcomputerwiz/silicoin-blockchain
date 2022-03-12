@@ -98,7 +98,7 @@ def get_transactions_cmd(
 )
 @click.option("-f", "--fingerprint", help="Set the fingerprint to specify which wallet to use", type=int)
 @click.option("-i", "--id", help="Id of the wallet to use", type=int, default=1, show_default=True, required=True)
-@click.option("-a", "--amount", help="How much silicoin to send, in SIT", type=str, required=True)
+@click.option("-a", "--amount", help="How much Silicoin to send, in SIT", type=str, required=True)
 @click.option(
     "-m",
     "--fee",
@@ -259,7 +259,7 @@ async def do_recover_pool_nft(contract_hash: str, launcher_hash: str, fingerprin
 )
 @click.option(
     "--launcher-hash",
-    help="Set the launcher hash, you should get it from silicoin wallet",
+    help="Set the launcher hash, you should get it from Silicoin wallet",
     type=str,
     default=None,
 )
