@@ -88,7 +88,7 @@ def get_transactions_cmd(
     sys.stdout.close()
 
 
-@wallet_cmd.command("send", short_help="Send sit to another wallet")
+@wallet_cmd.command("send", short_help="Send Silicoin to another wallet")
 @click.option(
     "-wp",
     "--wallet-rpc-port",
