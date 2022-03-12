@@ -424,7 +424,7 @@ class Farmer:
                     pool_info = await self._pool_get_pool_info(pool_config)
                     if pool_info is not None and "error_code" not in pool_info:
                         pool_state["authentication_token_timeout"] = pool_info["authentication_token_timeout"]
-                        pool_state["next_pool_info_update"] = time.time() + pool_info_update_interval
+                        pool_state["next_pool_info_update"] = time.time() + self.pool_info_update_interval
                         # Only update the first time from GET /pool_info, gets updated from GET /farmer later
                         if pool_state["current_difficulty"] is None:
                             pool_state["current_difficulty"] = pool_info["minimum_difficulty"]
@@ -445,7 +445,7 @@ class Farmer:
                                 if farmer_response is not None:
                                     pool_state["current_difficulty"] = farmer_response.current_difficulty
                                     pool_state["current_points"] = farmer_response.current_points
-                                    pool_state["next_farmer_update"] = time.time() + pool_farmer_info_update_interval
+                                    pool_state["next_farmer_update"] = time.time() + self.pool_farmer_info_update_interval
                             else:
                                 farmer_known = response["error_code"] != PoolErrorCode.FARMER_NOT_KNOWN.value
                                 self.log.error(
