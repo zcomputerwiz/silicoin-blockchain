@@ -94,20 +94,6 @@ class Farmer:
         consensus_constants: ConsensusConstants,
         local_keychain: Optional[Keychain] = None,
     ):
-        pool_info_update_interval = UPDATE_POOL_INFO_INTERVAL
-        pool_farmer_info_update_interval = UPDATE_POOL_FARMER_INFO_INTERVAL
-        harvester_cache_update_interval = UPDATE_HARVESTER_CACHE_INTERVAL
-
-        if "update_intervals" in self.config:
-            update_intervals = self.config["update_intervals"]
-
-            if "pool_info" in update_intervals:
-                pool_info_update_interval = update_intervals["pool_info"]
-            if "pool_farmer_info" in update_intervals:
-                pool_farmer_info_update_interval = update_intervals["pool_farmer_info"]
-            if "harvester_cache" in update_intervals:
-                harvester_cache_update_interval = update_intervals["harvester_cache"]
-
         self.keychain_proxy: Optional[KeychainProxy] = None
         self.local_keychain = local_keychain
         self._root_path = root_path
@@ -129,8 +115,22 @@ class Farmer:
         # to periodically clear the memory
         self.cache_add_time: Dict[bytes32, uint64] = {}
 
+        self.pool_info_update_interval = UPDATE_POOL_INFO_INTERVAL
+        self.pool_farmer_info_update_interval = UPDATE_POOL_FARMER_INFO_INTERVAL
+        self.harvester_cache_update_interval = UPDATE_HARVESTER_CACHE_INTERVAL
+
+        if "update_intervals" in self.config:
+            update_intervals = self.config["update_intervals"]
+
+            if "pool_info" in update_intervals:
+                self.pool_info_update_interval = update_intervals["pool_info"]
+            if "pool_farmer_info" in update_intervals:
+                self.pool_farmer_info_update_interval = update_intervals["pool_farmer_info"]
+            if "harvester_cache" in update_intervals:
+                self.harvester_cache_update_interval = update_intervals["harvester_cache"]
+
         # Interval to request plots from connected harvesters
-        self.update_harvester_cache_interval = harvester_cache_update_interval
+        self.update_harvester_cache_interval = self.harvester_cache_update_interval
 
         self.cache_clear_task: asyncio.Task
         self.update_pool_state_task: asyncio.Task
