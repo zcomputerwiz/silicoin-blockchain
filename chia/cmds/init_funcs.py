@@ -353,16 +353,16 @@ def chia_init(
     protected Keychain. When launching the daemon from the GUI, we want the GUI to
     handle unlocking the keychain.
     """
-    if os.environ.get("CHIA_ROOT", None) is not None:
+    if os.environ.get("SIT_ROOT", None) is not None:
         print(
-            f"warning, your CHIA_ROOT is set to {os.environ['CHIA_ROOT']}. "
+            f"warning, your SIT_ROOT is set to {os.environ['SIT_ROOT']}. "
             f"Please unset the environment variable and run sit init again\n"
             f"or manually migrate config.yaml"
         )
 
     print(f"Silicoin directory {root_path}")
     if root_path.is_dir() and Path(root_path / "config" / "config.yaml").exists():
-        # This is reached if CHIA_ROOT is set, or if user has run sit init twice
+        # This is reached if SIT_ROOT is set, or if user has run sit init twice
         # before a new update.
         if testnet:
             configure(root_path, "", "", "", "", "", "", "", "", testnet="true", peer_connect_timeout="")

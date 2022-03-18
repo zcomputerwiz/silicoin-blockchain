@@ -152,6 +152,12 @@ farmer:
     public_crt:  "config/ssl/farmer/public_farmer.crt"
     public_key:  "config/ssl/farmer/public_farmer.key"
 
+  update_intervals:
+    pool_info: 3600
+    # Some larger farmers have reported better performance when setting both of the values below to 1000.
+    pool_farmer_info: 300
+    harvester_cache: 90
+
 # Don't run this unless you want to run VDF clients on the local machine.
 timelord_launcher:
   # The server where the VDF clients will connect to.
