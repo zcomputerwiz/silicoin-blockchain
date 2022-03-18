@@ -155,8 +155,8 @@ farmer:
   update_intervals:
     pool_info: 3600
     # Some larger farmers have reported better performance when setting both of the values below to 1000.
-    pool_farmer_info: 300
-    harvester_cache: 90
+    pool_farmer_info: 1000
+    harvester_cache: 1000
 
 # Don't run this unless you want to run VDF clients on the local machine.
 timelord_launcher:
