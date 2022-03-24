@@ -106,7 +106,7 @@ class Harvester:
         with self.plot_manager:
             for path, plot_info in self.plot_manager.plots.items():
                 prover = plot_info.prover
-                puzzle_address = farmer_keys_addresses.get(plot_info.farmer_public_key)
+                puzzle_address = farmer_keys_addresses.get(bytes(plot_info.farmer_public_key))
                 if puzzle_address is None:
                     puzzle_address = encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix)
                     farmer_keys_addresses.update({bytes(plot_info.farmer_public_key): str(puzzle_address)})
