@@ -318,8 +318,10 @@ async def summary(
 
             print(f"    Fingerprint: {PlotStats.fingerprints[ph]}")
 
+            address_capacity = PlotStats.capacities[ph]
+
             print(f"    Plots: {plot_count} (", end="")
-            print(format_bytes(PlotStats.capacities[ph]), end="")
+            print(format_bytes(address_capacity), end="")
             print(")")
 
             # query balance
@@ -330,7 +332,9 @@ async def summary(
             PlotStats.staking_factors[ph] = sf
 
             print(f"    Balance: {balance} SIT")
-            print(f"    Estimated staking factor: {sf}")
+            print(f"    Estimated staking factor: {sf} (effectively ", end="")
+            print(format_bytes(int(address_capacity / float(sf))), end="")
+            print(")")
     else:
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
