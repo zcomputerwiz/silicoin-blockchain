@@ -102,9 +102,14 @@ class Harvester:
         self.log.debug(f"get_plots prover items: {self.plot_manager.plot_count()}")
         address_prefix = self.config["network_overrides"]["config"][self.config["selected_network"]]["address_prefix"]
         response_plots: List[Dict] = []
+        farmer_keys_addresses: Dict[bytes, bytes] = {}
         with self.plot_manager:
             for path, plot_info in self.plot_manager.plots.items():
                 prover = plot_info.prover
+                puzzle_address = farmer_keys_addresses.get(plot_info.farmer_public_key)
+                if puzzle_address is None:
+                    puzzle_address = encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix)
+                    farmer_keys_addresses.update({plot_info.farmer_public_key: puzzle_address})
                 response_plots.append(
                     {
                         "filename": str(path),
@@ -117,7 +122,7 @@ class Harvester:
                         "file_size": plot_info.file_size,
                         "time_modified": plot_info.time_modified,
                         "farmer_public_key": plot_info.farmer_public_key,
-                        "farmer_puzzle_hash": encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix),
+                        "farmer_puzzle_hash": puzzle_address,
                     }
                 )
             self.log.debug(
