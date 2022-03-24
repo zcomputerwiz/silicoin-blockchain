@@ -5,7 +5,6 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
 from decimal import Decimal
-from blspy import G1Element
 
 from chia.consensus.coinbase import create_puzzlehash_for_pk
 import chia.server.ws_connection as ws  # lgtm [py/import-and-import-from]
@@ -103,14 +102,14 @@ class Harvester:
         self.log.debug(f"get_plots prover items: {self.plot_manager.plot_count()}")
         address_prefix = self.config["network_overrides"]["config"][self.config["selected_network"]]["address_prefix"]
         response_plots: List[Dict] = []
-        farmer_keys_addresses: Dict[G1Element, str] = {}
+        farmer_keys_addresses: Dict[bytes, str] = {}
         with self.plot_manager:
             for path, plot_info in self.plot_manager.plots.items():
                 prover = plot_info.prover
                 puzzle_address = farmer_keys_addresses.get(plot_info.farmer_public_key)
                 if puzzle_address is None:
                     puzzle_address = encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix)
-                    farmer_keys_addresses.update({G1Element(plot_info.farmer_public_key): str(puzzle_address)})
+                    farmer_keys_addresses.update({bytes(plot_info.farmer_public_key): str(puzzle_address)})
                 response_plots.append(
                     {
                         "filename": str(path),
