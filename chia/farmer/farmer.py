@@ -118,8 +118,22 @@ class Farmer:
         # to periodically clear the memory
         self.cache_add_time: Dict[bytes32, uint64] = {}
 
+        self.pool_info_update_interval = UPDATE_POOL_INFO_INTERVAL
+        self.pool_farmer_info_update_interval = UPDATE_POOL_FARMER_INFO_INTERVAL
+        self.harvester_cache_update_interval = UPDATE_HARVESTER_CACHE_INTERVAL
+
+        if "update_intervals" in self.config:
+            update_intervals = self.config["update_intervals"]
+
+            if "pool_info" in update_intervals:
+                self.pool_info_update_interval = update_intervals["pool_info"]
+            if "pool_farmer_info" in update_intervals:
+                self.pool_farmer_info_update_interval = update_intervals["pool_farmer_info"]
+            if "harvester_cache" in update_intervals:
+                self.harvester_cache_update_interval = update_intervals["harvester_cache"]
+
         # Interval to request plots from connected harvesters
-        self.update_harvester_cache_interval = UPDATE_HARVESTER_CACHE_INTERVAL
+        self.update_harvester_cache_interval = self.harvester_cache_update_interval
 
         self.cache_clear_task: asyncio.Task
         self.update_pool_state_task: asyncio.Task
@@ -154,13 +168,13 @@ class Farmer:
             raise RuntimeError(error_str)
 
         # This is the farmer configuration
-        self.farmer_target_encoded = self.config["xch_target_address"]
+        self.farmer_target_encoded = self.config["sit_target_address"]
         self.farmer_target = decode_puzzle_hash(self.farmer_target_encoded)
 
         self.pool_public_keys = [G1Element.from_bytes(bytes.fromhex(pk)) for pk in self.config["pool_public_keys"]]
 
         # This is the self pooling configuration, which is only used for original self-pooled plots
-        self.pool_target_encoded = self.pool_config["xch_target_address"]
+        self.pool_target_encoded = self.pool_config["sit_target_address"]
         self.pool_target = decode_puzzle_hash(self.pool_target_encoded)
         self.pool_sks_map: Dict = {}
         for key in self.get_private_keys():
@@ -413,7 +427,7 @@ class Farmer:
                     pool_info = await self._pool_get_pool_info(pool_config)
                     if pool_info is not None and "error_code" not in pool_info:
                         pool_state["authentication_token_timeout"] = pool_info["authentication_token_timeout"]
-                        pool_state["next_pool_info_update"] = time.time() + UPDATE_POOL_INFO_INTERVAL
+                        pool_state["next_pool_info_update"] = time.time() + self.pool_info_update_interval
                         # Only update the first time from GET /pool_info, gets updated from GET /farmer later
                         if pool_state["current_difficulty"] is None:
                             pool_state["current_difficulty"] = pool_info["minimum_difficulty"]
@@ -434,7 +448,7 @@ class Farmer:
                                 if farmer_response is not None:
                                     pool_state["current_difficulty"] = farmer_response.current_difficulty
                                     pool_state["current_points"] = farmer_response.current_points
-                                    pool_state["next_farmer_update"] = time.time() + UPDATE_POOL_FARMER_INFO_INTERVAL
+                                    pool_state["next_farmer_update"] = time.time() + self.pool_farmer_info_update_interval
                             else:
                                 farmer_known = response["error_code"] != PoolErrorCode.FARMER_NOT_KNOWN.value
                                 self.log.error(
@@ -537,11 +551,11 @@ class Farmer:
         if farmer_target_encoded is not None:
             self.farmer_target_encoded = farmer_target_encoded
             self.farmer_target = decode_puzzle_hash(farmer_target_encoded)
-            config["farmer"]["xch_target_address"] = farmer_target_encoded
+            config["farmer"]["sit_target_address"] = farmer_target_encoded
         if pool_target_encoded is not None:
             self.pool_target_encoded = pool_target_encoded
             self.pool_target = decode_puzzle_hash(pool_target_encoded)
-            config["pool"]["xch_target_address"] = pool_target_encoded
+            config["pool"]["sit_target_address"] = pool_target_encoded
         save_config(self._root_path, "config.yaml", config)
 
     async def set_payout_instructions(self, launcher_id: bytes32, payout_instructions: str):
