@@ -4,6 +4,7 @@ import logging
 from concurrent.futures.thread import ThreadPoolExecutor
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Tuple
+from decimal import Decimal
 
 from chia.consensus.coinbase import create_puzzlehash_for_pk
 import chia.server.ws_connection as ws  # lgtm [py/import-and-import-from]
@@ -35,6 +36,7 @@ class Harvester:
     _refresh_lock: asyncio.Lock
     event_loop: asyncio.events.AbstractEventLoop
     config: Dict
+    filter_coeff: Decimal
 
     def __init__(self, root_path: Path, config: Dict, constants: ConsensusConstants):
         self.log = log
@@ -61,6 +63,7 @@ class Harvester:
         self.cached_challenges = []
         self.state_changed_callback: Optional[Callable] = None
         self.parallel_read: bool = config.get("parallel_read", True)
+        self.filter_coeff: Decimal = Decimal(config.get("filter_coeff", "0.5"))
 
     async def _start(self):
         self._refresh_lock = asyncio.Lock()
@@ -99,9 +102,14 @@ class Harvester:
         self.log.debug(f"get_plots prover items: {self.plot_manager.plot_count()}")
         address_prefix = self.config["network_overrides"]["config"][self.config["selected_network"]]["address_prefix"]
         response_plots: List[Dict] = []
+        farmer_keys_addresses: Dict[bytes, str] = {}
         with self.plot_manager:
             for path, plot_info in self.plot_manager.plots.items():
                 prover = plot_info.prover
+                puzzle_address = farmer_keys_addresses.get(bytes(plot_info.farmer_public_key))
+                if puzzle_address is None:
+                    puzzle_address = encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix)
+                    farmer_keys_addresses.update({bytes(plot_info.farmer_public_key): str(puzzle_address)})
                 response_plots.append(
                     {
                         "filename": str(path),
@@ -114,7 +122,8 @@ class Harvester:
                         "file_size": plot_info.file_size,
                         "time_modified": plot_info.time_modified,
                         "farmer_public_key": plot_info.farmer_public_key,
-                        "farmer_puzzle_address": encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix),
+                        "farmer_puzzle_hash": puzzle_address,
+                        #"farmer_puzzle_address": encode_puzzle_hash(create_puzzlehash_for_pk(plot_info.farmer_public_key), address_prefix),
                     }
                 )
             self.log.debug(

@@ -178,6 +178,7 @@ class WalletBlockchain(BlockchainInterface):
         genesis: bool = block.height == 0
 
         if self.contains_block_in_peak_chain(block.header_hash):
+        # if self.contains_block(block.header_hash):
             return ReceiveBlockResult.ALREADY_HAVE_BLOCK, None, None
 
         if not self.contains_block(block.prev_header_hash) and not genesis:
@@ -316,13 +317,8 @@ class WalletBlockchain(BlockchainInterface):
             # If no blocks in common, returns -1, and reverts all blocks
             if block_record.prev_hash == peak.header_hash:
                 fork_h: int = peak.height
-            elif fork_point_with_peak is not None:
-                fork_h = fork_point_with_peak
-            elif not self.contains_block_in_peak_chain(block_record.header_hash) and self.contains_block_in_peak_chain(
-                block_record.prev_hash
-            ):
-                # special case
-                fork_h = block_record.height - 1
+            if fork_point_with_peak is not None:
+                fork_h: int = fork_point_with_peak
             else:
                 fork_h = find_fork_point_in_chain(self, block_record, peak)
 

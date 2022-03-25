@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import List, Tuple, Optional
 
 from blspy import G1Element, G2Element
 
@@ -38,7 +38,7 @@ class NewSignagePointHarvester(Streamable):
     signage_point_index: uint8
     sp_hash: bytes32
     pool_difficulties: List[PoolDifficulty]
-    stakings: List[Tuple[G1Element, str]]  # difficulty_coeff of each farmer public key's puzzle hash
+    # stakings: List[Tuple[G1Element, str]]  # difficulty_coeff of each farmer public key's puzzle hash
 
 
 @dataclass(frozen=True)

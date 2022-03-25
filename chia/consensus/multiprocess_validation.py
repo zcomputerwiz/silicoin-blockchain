@@ -2,6 +2,7 @@ import logging
 import traceback
 from dataclasses import dataclass
 from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from decimal import Decimal
 
 from chia.consensus.block_header_validation import validate_finished_header_block
 from chia.consensus.block_record import BlockRecord
@@ -220,8 +221,7 @@ async def pre_validate_blocks_multiprocessing(
             constants.DIFFICULTY_CONSTANT_FACTOR,
             q_str,
             block.reward_chain_block.proof_of_space.size,
-            difficulty,
-            difficulty_coeff,
+            Decimal(int(difficulty) * Decimal(difficulty_coeff)),
             cc_sp_hash,
         )
 

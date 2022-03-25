@@ -368,6 +368,12 @@ class Blockchain(BlockchainInterface):
                 fork_height: int = peak.height
             elif fork_point_with_peak is not None:
                 fork_height = fork_point_with_peak
+            # elif not self.contains_block_in_peak_chain(block_record.header_hash) and self.contains_block_in_peak_chain(
+            #     block_record.prev_hash
+            # ):
+            #     # special case
+            #     fork_height = block_record.height - 1
+
             else:
                 fork_height = find_fork_point_in_chain(self, block_record, peak)
 
@@ -985,6 +991,9 @@ class Blockchain(BlockchainInterface):
         if peak_height is not None:
             if peak_height == 0:
                 return Decimal(20)
+            # this is a bad idea, but might get around the block not being done yet
+            while not self.contains_height(peak_height) and peak_height > 0:
+                peak_height -= 1
             header_hash = self.height_to_hash(peak_height)
             peak = await self.block_store.get_block_record(header_hash)
 

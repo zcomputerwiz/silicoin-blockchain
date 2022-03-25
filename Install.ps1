@@ -46,6 +46,7 @@ py -m venv venv
 venv\scripts\python -m pip install --upgrade pip setuptools wheel
 venv\scripts\pip install --extra-index-url https://pypi.chia.net/simple/ miniupnpc==2.2.2
 venv\scripts\pip install --editable . --extra-index-url https://pypi.chia.net/simple/
+venv\scripts\pip install nest_asyncio
 
 Write-Output ""
 Write-Output "Chia blockchain .\Install.ps1 complete."

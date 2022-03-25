@@ -109,8 +109,7 @@ async def load_blocks_dont_validate(
             test_constants.DIFFICULTY_CONSTANT_FACTOR,
             quality_string,
             block.reward_chain_block.proof_of_space.size,
-            difficulty,
-            0,
+            difficulty * 0,
             cc_sp,
         )
 

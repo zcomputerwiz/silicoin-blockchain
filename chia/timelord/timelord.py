@@ -5,8 +5,7 @@ import logging
 import random
 import time
 import traceback
-from decimal import Decimal
-from typing import Callable, Dict, List, Optional, Set, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Set
 
 from chiavdf import create_discriminant
 
@@ -166,8 +165,7 @@ class Timelord:
                 self.constants,
                 rc_block,
                 sub_slot_iters,
-                difficulty,
-                Decimal(block.difficulty_coeff),
+                difficulty * block.difficulty_coeff,
             )
         except Exception as e:
             log.warning(f"Received invalid unfinished block: {e}.")
@@ -471,8 +469,7 @@ class Timelord:
                             self.constants,
                             unfinished_block.reward_chain_block,
                             self.last_state.get_sub_slot_iters(),
-                            self.last_state.get_difficulty(),
-                            Decimal(unfinished_block.difficulty_coeff),
+                            self.last_state.get_difficulty() * unfinished_block.difficulty_coeff,
                         )
                     except Exception as e:
                         log.error(f"Error {e}")
@@ -628,8 +625,7 @@ class Timelord:
 
                     self.new_peak = timelord_protocol.NewPeakTimelord(
                         new_reward_chain_block,
-                        block.difficulty,
-                        block.difficulty_coeff,
+                        block.difficulty * block.difficulty_coeff,
                         uint8(new_deficit),
                         block.sub_slot_iters,
                         new_sub_epoch_summary,

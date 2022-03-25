@@ -1,5 +1,4 @@
 import logging
-from decimal import Decimal
 from typing import List, Optional, Tuple, Union
 
 from chia.consensus.constants import ConsensusConstants
@@ -58,8 +57,7 @@ class LastState:
                 self.constants,
                 state.reward_chain_block,
                 state.sub_slot_iters,
-                state.difficulty,
-                Decimal(state.difficulty_coeff),
+                state.difficulty * state.difficulty_coeff,
             )
             self.deficit = state.deficit
             self.sub_epoch_summary = state.sub_epoch_summary
@@ -79,7 +77,6 @@ class LastState:
             else:
                 self.passed_ses_height_but_not_yet_included = state.passes_ses_height_but_not_yet_included
         elif isinstance(state, EndOfSubSlotBundle):
-            log.info("set state EndOfSubSlotBundle")
             self.state_type = StateType.END_OF_SUB_SLOT
             if self.peak is not None:
                 self.total_iters = uint128(self.total_iters - self.get_last_ip() + self.sub_slot_iters)

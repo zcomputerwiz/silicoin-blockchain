@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Optional, Tuple, Union
 
 from chia.consensus.pot_iterations import calculate_ip_iters, calculate_iterations_quality, calculate_sp_iters
@@ -12,9 +11,9 @@ def iters_from_block(
     reward_chain_block: Union[RewardChainBlock, RewardChainBlockUnfinished],
     sub_slot_iters: uint64,
     difficulty: uint64,
-    difficulty_coeff: Decimal,
+    # difficulty_coeff: Decimal,
 ) -> Tuple[uint64, uint64]:
-    assert isinstance(difficulty_coeff, Decimal)
+    # assert isinstance(difficulty_coeff, Decimal)
     if reward_chain_block.challenge_chain_sp_vdf is None:
         assert reward_chain_block.signage_point_index == 0
         cc_sp: bytes32 = reward_chain_block.pos_ss_cc_challenge_hash
@@ -33,7 +32,7 @@ def iters_from_block(
         quality_string,
         reward_chain_block.proof_of_space.size,
         difficulty,
-        difficulty_coeff,
+        # difficulty_coeff,
         cc_sp,
     )
     return (

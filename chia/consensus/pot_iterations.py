@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from chia.consensus.constants import ConsensusConstants
 from chia.consensus.pos_quality import _expected_plot_size
 from chia.types.blockchain_format.sized_bytes import bytes32
@@ -50,7 +48,6 @@ def calculate_iterations_quality(
     quality_string: bytes32,
     size: int,
     difficulty: uint64,
-    difficulty_coeff: Decimal,
     cc_sp_output_hash: bytes32,
 ) -> uint64:
     """
@@ -60,7 +57,7 @@ def calculate_iterations_quality(
     sp_quality_string: bytes32 = std_hash(quality_string + cc_sp_output_hash)
 
     iters = uint64(
-        int(difficulty * difficulty_coeff)
+        int(difficulty)
         * int(difficulty_constant_factor)
         * int.from_bytes(sp_quality_string, "big", signed=False)
         // (int(pow(2, 256)) * int(_expected_plot_size(size)))
