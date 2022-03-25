@@ -81,7 +81,7 @@ async def show_async(
                     f"                 Height: {peak.height:>10}\n",
                 )
 
-                print("Estimated network space: ", end="")
+                print("Estimated effective network space: ", end="")
                 print(format_bytes(blockchain_state["space"]))
                 print(f"Current difficulty: {difficulty}")
                 print(f"Current VDF sub_slot_iters: {sub_slot_iters}")

@@ -373,6 +373,7 @@ class Blockchain(BlockchainInterface):
             # ):
             #     # special case
             #     fork_height = block_record.height - 1
+
             else:
                 fork_height = find_fork_point_in_chain(self, block_record, peak)
 

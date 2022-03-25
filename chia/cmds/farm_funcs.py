@@ -18,6 +18,8 @@ from chia.util.default_root import DEFAULT_ROOT_PATH
 from chia.util.ints import uint16, uint64
 from chia.util.misc import format_bytes, format_minutes
 from chia.util.network import is_localhost
+from chia.util.keychain import Keychain
+from chia.wallet.derive_keys import master_sk_to_farmer_sk
 
 SECONDS_PER_BLOCK = (24 * 3600) / 4608
 
@@ -247,6 +249,9 @@ async def summary(
         total_plot_size = 0
         total_plots = 0
         staking_addresses = defaultdict(int)
+        fingerprints = defaultdict(int)
+        capacities = defaultdict(int)
+        staking_factors = defaultdict(int)
 
     if all_harvesters is not None:
         harvesters_local: dict = {}
@@ -261,13 +266,37 @@ async def summary(
                 harvesters_remote[ip][harvester["connection"]["node_id"]] = harvester
 
         def process_harvesters(harvester_peers_in: dict):
+            keychain = Keychain()
+            private_keys = keychain.get_all_private_keys()
+
+            for sk, seed in private_keys:
+                ph = create_puzzlehash_for_pk(hexstr_to_bytes(str(master_sk_to_farmer_sk(sk).get_g1())))
+
+                PlotStats.staking_addresses[ph] += 0
+                PlotStats.fingerprints[ph] = sk.get_g1().get_fingerprint()
+
             for harvester_peer_id, plots in harvester_peers_in.items():
-                total_plot_size_harvester = sum(map(lambda x: x["file_size"], plots["plots"]))
-                PlotStats.total_plot_size += total_plot_size_harvester
+                total_plot_size_harvester = 0
                 PlotStats.total_plots += len(plots["plots"])
+
+                plot_counts = defaultdict(int)
+                capacities = defaultdict(int)
+
                 for plot in plots["plots"]:
-                    ph = create_puzzlehash_for_pk(hexstr_to_bytes(plot["farmer_public_key"]))
-                    PlotStats.staking_addresses[ph] += 1
+                    farmer_public_key = plot["farmer_public_key"]
+                    plot_counts[farmer_public_key] += 1
+                    capacities[farmer_public_key] += plot["file_size"]
+
+                for farmer_public_key, plot_count in plot_counts.items():
+                    ph = create_puzzlehash_for_pk(hexstr_to_bytes(farmer_public_key))
+
+                    PlotStats.staking_addresses[ph] += plot_counts[farmer_public_key]
+
+                    capacity = capacities[farmer_public_key]
+                    PlotStats.capacities[ph] += capacity
+                    total_plot_size_harvester += capacity
+
+                PlotStats.total_plot_size += total_plot_size_harvester
                 print(f"   {len(plots['plots'])} plots of size: {format_bytes(total_plot_size_harvester)}")
 
         if len(harvesters_local) > 0:
@@ -284,30 +313,52 @@ async def summary(
 
         print("Staking addresses:")
         address_prefix = config["network_overrides"]["config"][config["selected_network"]]["address_prefix"]
-        for k, v in sorted(PlotStats.staking_addresses.items(), key=(lambda tup: tup[1]), reverse=True):
-            balance = await get_ph_balance(rpc_port, k)
-            balance /= Decimal(10 ** 12)
+        for ph, plot_count in PlotStats.staking_addresses.items():
+            print(f"  {encode_puzzle_hash(ph, address_prefix)}")
+
+            print(f"    Fingerprint: {PlotStats.fingerprints[ph]}")
+
+            print(f"    Plots: {plot_count} (", end="")
+            print(format_bytes(PlotStats.capacities[ph]), end="")
+            print(")")
+
             # query balance
-            ph = encode_puzzle_hash(k, address_prefix)
-            print(f"  {ph} (balance: {balance}, plots: {v})")
+            balance = await get_ph_balance(rpc_port, ph)
+            balance /= Decimal(10 ** 12)
+
+            sf = await get_est_staking_factor(PlotStats.capacities[ph], balance)
+            PlotStats.staking_factors[ph] = sf
+
+            print(f"    Balance: {balance} SIT")
+            print(f"    Estimated staking factor: {sf}")
     else:
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
 
     if blockchain_state is not None:
-        print("Estimated network space: ", end="")
+        print("Estimated effective network space: ", end="")
         print(format_bytes(blockchain_state["space"]))
     else:
-        print("Estimated network space: Unknown")
+        print("Estimated effective network space: Unknown")
 
     minutes = -1
+    est_plot_size = 0
     if blockchain_state is not None and all_harvesters is not None:
-        proportion = PlotStats.total_plot_size / blockchain_state["space"] if blockchain_state["space"] else -1
+        for ph, capacity in PlotStats.capacities.items():
+            est_plot_size += capacity / float(PlotStats.staking_factors[ph])
+
+        proportion = est_plot_size / blockchain_state["space"] if blockchain_state["space"] else -1
         minutes = int((await get_average_block_time(rpc_port) / 60) / proportion) if proportion else -1
 
     if all_harvesters is not None and PlotStats.total_plots == 0:
         print("Expected time to win: Never (no plots)")
     else:
+        print("Estimated effective farm capacity: ", end="")
+        print(format_bytes(int(est_plot_size)))
+
+        sf = PlotStats.total_plot_size / est_plot_size
+        print(f"Estimated effecitve staking factor: {round(sf, 2)}")
+
         print("Expected time to win: " + format_minutes(minutes))
 
     if amounts is None:
@@ -319,3 +370,20 @@ async def summary(
             print("For details on farmed rewards and fees you should run 'sit wallet show'")
     else:
         print("Note: log into your key using 'sit wallet show' to see rewards for each key")
+
+
+async def get_est_staking_factor(total_plot_size, total_staking_balance) -> Decimal:
+
+    sf = 0
+    if total_plot_size == 0:
+        return Decimal(1)
+
+    # convert farmer space from byte to T unit
+    converted_plot_size = total_plot_size / 1099511627776
+
+    if total_staking_balance >= converted_plot_size:
+        sf = Decimal("0.5") + Decimal(1) / (Decimal(total_staking_balance) / Decimal(converted_plot_size) + Decimal(1))
+    else:
+        sf = Decimal("0.05") + Decimal(1) / (Decimal(total_staking_balance) / Decimal(converted_plot_size) + Decimal("0.05"))
+
+    return round(sf, 2)

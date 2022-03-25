@@ -72,8 +72,8 @@ def check_keys(new_root: Path, keychain: Optional[Keychain] = None) -> None:
     config: Dict = load_config(new_root, "config.yaml")
     pool_child_pubkeys = [master_sk_to_pool_sk(sk).get_g1() for sk, _ in all_sks]
     all_targets = []
-    stop_searching_for_farmer = "xch_target_address" not in config["farmer"]
-    stop_searching_for_pool = "xch_target_address" not in config["pool"]
+    stop_searching_for_farmer = "sit_target_address" not in config["farmer"]
+    stop_searching_for_pool = "sit_target_address" not in config["pool"]
     number_of_ph_to_search = 500
     selected = config["selected_network"]
     prefix = config["network_overrides"]["config"][selected]["address_prefix"]
@@ -84,41 +84,41 @@ def check_keys(new_root: Path, keychain: Optional[Keychain] = None) -> None:
             all_targets.append(
                 encode_puzzle_hash(create_puzzlehash_for_pk(master_sk_to_wallet_sk(sk, uint32(i)).get_g1()), prefix)
             )
-            if all_targets[-1] == config["farmer"].get("xch_target_address"):
+            if all_targets[-1] == config["farmer"].get("sit_target_address"):
                 stop_searching_for_farmer = True
-            if all_targets[-1] == config["pool"].get("xch_target_address"):
+            if all_targets[-1] == config["pool"].get("sit_target_address"):
                 stop_searching_for_pool = True
 
     # Set the destinations, if necessary
     updated_target: bool = False
-    if "xch_target_address" not in config["farmer"]:
+    if "sit_target_address" not in config["farmer"]:
         print(
-            f"Setting the xch destination for the farmer reward (1/8 plus fees, solo and pooling) to {all_targets[0]}"
+            f"Setting the sit destination for the farmer reward (1/8 plus fees, solo and pooling) to {all_targets[0]}"
         )
-        config["farmer"]["xch_target_address"] = all_targets[0]
+        config["farmer"]["sit_target_address"] = all_targets[0]
         updated_target = True
-    elif config["farmer"]["xch_target_address"] not in all_targets:
+    elif config["farmer"]["sit_target_address"] not in all_targets:
         print(
             f"WARNING: using a farmer address which we don't have the private"
             f" keys for. We searched the first {number_of_ph_to_search} addresses. Consider overriding "
-            f"{config['farmer']['xch_target_address']} with {all_targets[0]}"
+            f"{config['farmer']['sit_target_address']} with {all_targets[0]}"
         )
 
     if "pool" not in config:
         config["pool"] = {}
-    if "xch_target_address" not in config["pool"]:
-        print(f"Setting the xch destination address for pool reward (7/8 for solo only) to {all_targets[0]}")
-        config["pool"]["xch_target_address"] = all_targets[0]
+    if "sit_target_address" not in config["pool"]:
+        print(f"Setting the sit destination address for pool reward (7/8 for solo only) to {all_targets[0]}")
+        config["pool"]["sit_target_address"] = all_targets[0]
         updated_target = True
-    elif config["pool"]["xch_target_address"] not in all_targets:
+    elif config["pool"]["sit_target_address"] not in all_targets:
         print(
             f"WARNING: using a pool address which we don't have the private"
             f" keys for. We searched the first {number_of_ph_to_search} addresses. Consider overriding "
-            f"{config['pool']['xch_target_address']} with {all_targets[0]}"
+            f"{config['pool']['sit_target_address']} with {all_targets[0]}"
         )
     if updated_target:
         print(
-            f"To change the XCH destination addresses, edit the `xch_target_address` entries in"
+            f"To change the SIT destination addresses, edit the `sit_target_address` entries in"
             f" {(new_root / 'config' / 'config.yaml').absolute()}."
         )
 
@@ -353,16 +353,16 @@ def chia_init(
     protected Keychain. When launching the daemon from the GUI, we want the GUI to
     handle unlocking the keychain.
     """
-    if os.environ.get("CHIA_ROOT", None) is not None:
+    if os.environ.get("SIT_ROOT", None) is not None:
         print(
-            f"warning, your CHIA_ROOT is set to {os.environ['CHIA_ROOT']}. "
+            f"warning, your SIT_ROOT is set to {os.environ['SIT_ROOT']}. "
             f"Please unset the environment variable and run sit init again\n"
             f"or manually migrate config.yaml"
         )
 
     print(f"Silicoin directory {root_path}")
     if root_path.is_dir() and Path(root_path / "config" / "config.yaml").exists():
-        # This is reached if CHIA_ROOT is set, or if user has run sit init twice
+        # This is reached if SIT_ROOT is set, or if user has run sit init twice
         # before a new update.
         if testnet:
             configure(root_path, "", "", "", "", "", "", "", "", testnet="true", peer_connect_timeout="")
