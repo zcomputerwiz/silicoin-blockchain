@@ -286,9 +286,12 @@ async def summary(
                     farmer_public_key = plot["farmer_public_key"]
                     plot_counts[farmer_public_key] += 1
                     capacities[farmer_public_key] += plot["file_size"]
-
+                farmer_keys_addresses: Dict[bytes, bytes32] = {}
                 for farmer_public_key, plot_count in plot_counts.items():
-                    ph = create_puzzlehash_for_pk(hexstr_to_bytes(farmer_public_key))
+                    ph = farmer_keys_addresses.get(bytes(hexstr_to_bytes(plot["farmer_public_key"])))
+                    if ph is None:
+                        ph = create_puzzlehash_for_pk(hexstr_to_bytes(plot["farmer_public_key"]))
+                        farmer_keys_addresses.update({bytes(hexstr_to_bytes(plot["farmer_public_key"])): ph})
 
                     PlotStats.staking_addresses[ph] += plot_counts[farmer_public_key]
 
