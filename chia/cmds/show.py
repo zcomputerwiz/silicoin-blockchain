@@ -51,15 +51,37 @@ async def show_async(
             num_blocks: int = 10
 
             if synced:
-                print("Current Blockchain Status: Full Node Synced")
+                print("Current Status: Full Node Synced")
                 print("\nPeak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None and sync_mode:
                 sync_max_block = blockchain_state["sync"]["sync_tip_height"]
                 sync_current_block = blockchain_state["sync"]["sync_progress_height"]
-                print(f"Current Blockchain Status: Syncing {sync_current_block}/{sync_max_block}.")
+                print(f"Current Status: Syncing {sync_current_block}/{sync_max_block}.")
                 print("Peak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None:
-                print(f"Current Blockchain Status: Not Synced. Peak height: {peak.height}")
+                connections = await client.get_connections()
+                current_sync_height = peak.height
+
+                peak_peer = None
+                peak_peer_height = 0
+
+                for con in connections:
+                    if NodeType(con["type"]) is NodeType.FULL_NODE:
+                        peer_height = con["peak_height"]
+                    else:
+                        continue
+
+                    if peer_height > peak_peer_height:
+                        peak_peer = con
+                        peak_peer_height = peer_height
+
+                if peak_peer is None:
+                    print(f"Current Status: Not Connected to Peers. Peak height: {current_sync_height}")
+                else:
+                    if current_sync_height == peak_peer_height:
+                        print(f"Current Status: Peers Stalled. Peak height: {current_sync_height}")
+                    else:
+                        print(f"Current Status: Not Synced. Peak height: {current_sync_height}/{peak_peer_height}")
             else:
                 print("\nSearching for an initial chain\n")
                 print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
