@@ -363,9 +363,6 @@ async def summary(
         print("Estimated effective farm capacity: ", end="")
         print(format_bytes(int(est_plot_size)))
 
-        sf = PlotStats.total_plot_size / est_plot_size
-        print(f"Estimated effecitve staking factor: {round(sf, 2)}")
-
         print("Expected time to win: " + format_minutes(minutes))
 
     if amounts is None:
