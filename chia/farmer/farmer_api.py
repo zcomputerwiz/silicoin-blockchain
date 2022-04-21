@@ -451,7 +451,7 @@ class FarmerAPI:
                 farmer_protocol.RequestStakings(public_keys=self.farmer.get_public_keys(), height=None, blocks=None)
             )
             if rsp is None or not isinstance(rsp, farmer_protocol.FarmerStakings):
-                self.log.warning(f"bad RequestStakings response from peer {rsp}")
+                self.farmer.log.warning(f"bad RequestStakings response from peer {rsp}")
                 return
 
             message = harvester_protocol.NewSignagePointHarvester(
