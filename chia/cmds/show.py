@@ -6,6 +6,7 @@ import click
 async def show_async(
     rpc_port: Optional[int],
     state: bool,
+    sync_speed_delay: Optional[int],
     show_connections: bool,
     exit_node: bool,
     add_connection: str,
@@ -28,7 +29,7 @@ async def show_async(
     from chia.util.config import load_config
     from chia.util.default_root import DEFAULT_ROOT_PATH
     from chia.util.ints import uint16
-    from chia.util.misc import format_bytes
+    from chia.util.misc import format_bytes, format_minutes
 
     try:
         config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
@@ -36,6 +37,23 @@ async def show_async(
         if rpc_port is None:
             rpc_port = config["full_node"]["rpc_port"]
         client = await FullNodeRpcClient.create(self_hostname, uint16(rpc_port), DEFAULT_ROOT_PATH, config)
+
+        def get_peak_peer_height(connections):
+            peak_peer_height = -1
+
+            for con in connections:
+                if NodeType(con["type"]) is NodeType.FULL_NODE:
+                    peer_height = con["peak_height"]
+
+                    if peer_height is None:
+                        continue
+                else:
+                    continue
+
+                if peer_height > peak_peer_height:
+                    peak_peer_height = peer_height
+
+            return peak_peer_height
 
         if state:
             blockchain_state = await client.get_blockchain_state()
@@ -59,23 +77,12 @@ async def show_async(
                 print(f"Current Status: Syncing {sync_current_block}/{sync_max_block}.")
                 print("Peak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None:
-                connections = await client.get_connections()
                 current_sync_height = peak.height
 
-                peak_peer = None
-                peak_peer_height = 0
+                connections = await client.get_connections()
+                peak_peer_height = get_peak_peer_height(connections)
 
-                for con in connections:
-                    if NodeType(con["type"]) is NodeType.FULL_NODE:
-                        peer_height = con["peak_height"]
-                    else:
-                        continue
-
-                    if peer_height > peak_peer_height:
-                        peak_peer = con
-                        peak_peer_height = peer_height
-
-                if peak_peer is None:
+                if peak_peer_height == -1:
                     print(f"Current Status: Not Connected to Peers. Peak height: {current_sync_height}")
                 else:
                     if current_sync_height == peak_peer_height:
@@ -121,6 +128,83 @@ async def show_async(
                     print(f"{b.height:>9} | {b.header_hash}")
             else:
                 print("Blockchain has no blocks yet")
+
+            # if called together with sync_speed_delay, leave a blank line
+            if sync_speed_delay:
+                print("")
+        if sync_speed_delay is not None:
+            if not isinstance(sync_speed_delay, int) or sync_speed_delay <= 0:
+                print("You must specify a valid number of seconds.")
+
+                client.close()
+                await client.await_closed()
+
+                return None
+
+            def get_current_sync_height(blockchain_state):
+                if blockchain_state is None:
+                    return -1
+
+                peak: Optional[BlockRecord] = blockchain_state["peak"]
+
+                if peak is None:
+                    return -2
+                else:
+                    return peak.height
+
+            #First Measurement
+
+            blockchain_state = await client.get_blockchain_state()
+            measurement_1 = get_current_sync_height(blockchain_state)
+            start_time = time.time() #Current Time in Microseconds
+
+            if measurement_1 == -1:
+                print("There is no blockchain found yet. Try again shortly")
+                return None
+            elif measurement_1 == -2:
+                print("\nSearching for an initial chain\n")
+                print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
+                return None
+
+            print(f"Measurement 1 Performed. Height: {measurement_1}")
+
+            #Delay
+
+            print(f"Waiting {sync_speed_delay} second(s)...")
+            time.sleep(sync_speed_delay)
+
+            #Second Measurement
+
+            blockchain_state = await client.get_blockchain_state()
+            measurement_2 = get_current_sync_height(blockchain_state)
+            end_time = time.time() #Current Time in Microseconds
+
+            connections = await client.get_connections()
+            peak_peer_height = get_peak_peer_height(connections)
+
+            if measurement_2 == -1:
+                print("Measurement 2 failed because the blockchain was... lost? What?")
+                return None
+            elif measurement_2 == -2:
+                print("Measurement 2 failed because the blockchain... packed up and left apparently.")
+                print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
+                return None
+
+            print(f"Measurement 2 Performed. Height: {measurement_2}")
+
+            #Calculation
+
+            block_range = measurement_2 - measurement_1
+            time_range = end_time - start_time #Seconds
+
+            print(f"Measurements completed in {time_range:.2f} seconds across {block_range} blocks.")
+
+            blocks_per_minute = block_range / (time_range / 60)
+            time_to_full_sync = (peak_peer_height - measurement_2) / blocks_per_minute #Minutes
+
+            print("") #Blank Line
+            print(f"Syncing Speed: {blocks_per_minute:.2f} Blocks/Minute")
+            print(f"Estimated Time to Full Sync ({peak_peer_height}): {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line
             if show_connections:
@@ -304,7 +388,19 @@ async def show_async(
     type=int,
     default=None,
 )
-@click.option("-s", "--state", help="Show the current state of the blockchain", is_flag=True, type=bool, default=False)
+@click.option(
+    "-s", "--state", help="Show the current state of the node and blockchain", is_flag=True, type=bool, default=False
+)
+@click.option(
+    "-ss",
+    "--sync-speed",
+    help=(
+        "Estimate the syncing speed and remaining time before the node is fully synced, by taking 2 delayed "
+        "measurements. Specify the delay in seconds."
+    ),
+    type=int,
+    default=None,
+)
 @click.option(
     "-c", "--connections", help="List nodes connected to this Full Node", is_flag=True, type=bool, default=False
 )
@@ -321,6 +417,7 @@ def show_cmd(
     rpc_port: Optional[int],
     wallet_rpc_port: Optional[int],
     state: bool,
+    sync_speed: Optional[int],
     connections: bool,
     exit_node: bool,
     add_connection: str,
@@ -334,6 +431,7 @@ def show_cmd(
         show_async(
             rpc_port,
             state,
+            sync_speed,
             connections,
             exit_node,
             add_connection,
