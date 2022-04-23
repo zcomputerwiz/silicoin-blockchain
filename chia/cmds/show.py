@@ -264,7 +264,7 @@ async def show_async(
             print(f"Measurements completed in {time_range:.2f} seconds across {blocks_synced} blocks.")
 
             if peer_blocks_synced >= 0:
-                print(f"Peers synced {peer_blocks_synced    } blocks during the measurement.")
+                print(f"Peers synced {peer_blocks_synced} blocks during the measurement.")
             else:
                 print(f"Highest peer disconnected during measurement. Height: {peak_peer_height_2} => {peak_peer_height_1}")
 
@@ -300,7 +300,7 @@ async def show_async(
             peer_sync_speed = peer_blocks_synced / time_range #Blocks per Minute
 
             if is_synced_1 and is_synced_2:
-                print(f"Peer Block Rate: {peer_block_rate:.2f} Blocks/Minute")
+                print(f"Peer Block Rate: {peer_sync_speed:.2f} Blocks/Minute")
             else:
                 sync_speed = blocks_synced / time_range #Blocks per Minute
                 relative_speed = sync_speed - peer_sync_speed #Blocks per Minute
