@@ -155,6 +155,7 @@ async def show_async(
             #First Measurement
 
             blockchain_state = await client.get_blockchain_state()
+            sync_status_1 = blockchain_state["sync"]["synced"]
             measurement_1 = get_current_sync_height(blockchain_state)
             start_time = time.time() #Current Time in Microseconds
 
@@ -176,6 +177,7 @@ async def show_async(
             #Second Measurement
 
             blockchain_state = await client.get_blockchain_state()
+            sync_status_2 = blockchain_state["sync"]["synced"]
             measurement_2 = get_current_sync_height(blockchain_state)
             end_time = time.time() #Current Time in Microseconds
 
@@ -199,12 +201,29 @@ async def show_async(
 
             print(f"Measurements completed in {time_range:.2f} seconds across {block_range} blocks.")
 
+            print("") #Blank Line
+
+            if not sync_status_1 and sync_status_2:
+                print(f"Node fully synced before speed test could complete. Height: {measurement_2}")
+                return None
+            if sync_status_1 and not sync_status_2:
+                print(f"Node fell out of sync before speed test could complete. Height: {measurement_2}")
+                return None
+            elif block_range == 0:
+                if measurement_2 == peak_peer_height:
+                    print(f"Peers Stalled. Peak height: {measurement_2}")
+                else:
+                    print(f"No Movement Detected. Peak height: {measurement_2}")
+                return None
+
             blocks_per_minute = block_range / (time_range / 60)
             time_to_full_sync = (peak_peer_height - measurement_2) / blocks_per_minute #Minutes
 
-            print("") #Blank Line
-            print(f"Syncing Speed: {blocks_per_minute:.2f} Blocks/Minute")
-            print(f"Estimated Time to Full Sync ({peak_peer_height}): {format_minutes(round(time_to_full_sync))}")
+            if sync_status_1 and sync_status_2:
+                print(f"Network Block Rate: {blocks_per_minute:.2f} Blocks/Minute")
+            else:
+                print(f"Syncing Speed: {blocks_per_minute:.2f} Blocks/Minute")
+                print(f"Estimated Time to Full Sync ({peak_peer_height}): {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line
             if show_connections:
