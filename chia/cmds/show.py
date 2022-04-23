@@ -191,12 +191,12 @@ async def show_async(
                 await client.await_closed()
                 return None
 
-            print(f"Measurement 1 Performed. Height: {sync_height_1} / {peak_peer_height_1} (", end="")
+            print(f"Measurement 1 performed. Height: {sync_height_1} / {peak_peer_height_1} (", end="")
 
             if is_synced_1:
-                print("Synced)")
+                print("synced)")
             else:
-                print("Not Synced)")
+                print("not synced)")
 
             #Delay
 
@@ -246,12 +246,12 @@ async def show_async(
                 await client.await_closed()
                 return None
 
-            print(f"Measurement 2 Performed. Height: {sync_height_2} / {peak_peer_height_2} (", end="")
+            print(f"Measurement 2 performed. Height: {sync_height_2} / {peak_peer_height_2} (", end="")
 
             if is_synced_2:
-                print("Synced)")
+                print("synced)")
             else:
-                print("Not Synced)")
+                print("not synced)")
 
             #Calculation
 
