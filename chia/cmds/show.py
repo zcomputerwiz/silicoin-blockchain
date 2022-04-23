@@ -133,15 +133,12 @@ async def show_async(
             if sync_speed_delay:
                 print("")
         if sync_speed_delay is not None:
-            def end_command():
-                client.close()
-                await client.await_closed()
-
-                return None
-
             if not isinstance(sync_speed_delay, int) or sync_speed_delay <= 0:
                 print("You must specify a valid number of seconds.")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
 
             def get_current_sync_height(blockchain_state):
                 if blockchain_state is None:
@@ -166,14 +163,20 @@ async def show_async(
 
             if peak_peer_height == -1:
                 print(f"Not connected to peers. Height: {current_sync_height}")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
             elif measurement_1 == -1:
                 print("There is no blockchain found yet. Try again shortly")
                 return None
             elif measurement_1 == -2:
                 print("\nSearching for an initial chain\n")
                 print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
 
             print(f"Measurement 1 Performed. Height: {measurement_1}")
 
@@ -194,14 +197,23 @@ async def show_async(
 
             if peak_peer_height == -1:
                 print(f"Connection to peers lost. Height: {current_sync_height}")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
             elif measurement_2 == -1:
                 print("Measurement 2 failed because the blockchain was... lost? What?")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
             elif measurement_2 == -2:
                 print("Measurement 2 failed because the blockchain... packed up and left apparently.")
                 print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
 
             print(f"Measurement 2 Performed. Height: {measurement_2}")
 
@@ -216,17 +228,25 @@ async def show_async(
 
             if not sync_status_1 and sync_status_2:
                 print(f"Node fully synced before speed test could complete. Height: {measurement_2}")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
             elif sync_status_1 and not sync_status_2:
                 print(f"Node fell out of sync before speed test could complete. Height: {measurement_2}")
-                return end_command()
+
+                client.close()
+                await client.await_closed()
+                return None
             elif block_range == 0:
                 if measurement_2 == peak_peer_height:
                     print(f"Peers Stalled. Peak height: {measurement_2}")
                 else:
                     print(f"No Movement Detected. Peak height: {measurement_2}")
 
-                return end_command()
+                client.close()
+                await client.await_closed()
+                return None
 
             blocks_per_minute = block_range / (time_range / 60)
             time_to_full_sync = (peak_peer_height - measurement_2) / blocks_per_minute #Minutes
