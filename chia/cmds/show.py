@@ -206,7 +206,7 @@ async def show_async(
             if not sync_status_1 and sync_status_2:
                 print(f"Node fully synced before speed test could complete. Height: {measurement_2}")
                 return None
-            if sync_status_1 and not sync_status_2:
+            elif sync_status_1 and not sync_status_2:
                 print(f"Node fell out of sync before speed test could complete. Height: {measurement_2}")
                 return None
             elif block_range == 0:
