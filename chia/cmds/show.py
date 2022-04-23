@@ -153,32 +153,50 @@ async def show_async(
 
             #First Measurement
 
+            time_1 = time.time() #Current Time in Microseconds
+
             blockchain_state = await client.get_blockchain_state()
-            sync_status_1 = blockchain_state["sync"]["synced"]
-            measurement_1 = get_current_sync_height(blockchain_state)
-            start_time = time.time() #Current Time in Microseconds
+            is_synced_1 = blockchain_state["sync"]["synced"]
+            sync_height_1 = get_current_sync_height(blockchain_state)
 
             connections = await client.get_connections()
-            peak_peer_height = get_peak_peer_height(connections)
+            peak_peer_height_1 = get_peak_peer_height(connections)
 
-            if peak_peer_height == -1:
+            if peak_peer_height_1 == -1:
                 print(f"Not connected to peers.")
 
                 client.close()
                 await client.await_closed()
                 return None
-            elif measurement_1 == -1:
+            elif sync_height_1 == -1:
                 print("There is no blockchain found yet. Try again shortly")
                 return None
-            elif measurement_1 == -2:
+            elif sync_height_1 == -2:
                 print("\nSearching for an initial chain\n")
                 print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
 
                 client.close()
                 await client.await_closed()
                 return None
+            elif sync_height_1 > peak_peer_height_1:
+                print(f"Peers are behind. Height: {sync_height_1} / {peak_peer_height_1}")
 
-            print(f"Measurement 1 Performed. Height: {measurement_1}")
+                client.close()
+                await client.await_closed()
+                return None
+            elif sync_height_1 == peak_peer_height_1:
+                print(f"Peers have stalled. Height: {sync_height_1}")
+
+                client.close()
+                await client.await_closed()
+                return None
+
+            print(f"Measurement 1 Performed. Height: {sync_height_1} / {peak_peer_height_1} (", end="")
+
+            if is_synced_1:
+                print("Synced)")
+            else:
+                print("Not Synced)")
 
             #Delay
 
@@ -187,75 +205,109 @@ async def show_async(
 
             #Second Measurement
 
+            time_2 = time.time() #Current Time in Microseconds
+
             blockchain_state = await client.get_blockchain_state()
-            sync_status_2 = blockchain_state["sync"]["synced"]
-            measurement_2 = get_current_sync_height(blockchain_state)
-            end_time = time.time() #Current Time in Microseconds
+            is_synced_2 = blockchain_state["sync"]["synced"]
+            sync_height_2 = get_current_sync_height(blockchain_state)
 
             connections = await client.get_connections()
-            peak_peer_height = get_peak_peer_height(connections)
+            peak_peer_height_2 = get_peak_peer_height(connections)
 
-            if peak_peer_height == -1:
+            if peak_peer_height_2 == -1:
                 print(f"Connection to peers lost.")
 
                 client.close()
                 await client.await_closed()
                 return None
-            elif measurement_2 == -1:
+            elif sync_height_2 == -1:
                 print("Measurement 2 failed because the blockchain was... lost? What?")
 
                 client.close()
                 await client.await_closed()
                 return None
-            elif measurement_2 == -2:
+            elif sync_height_2 == -2:
                 print("Measurement 2 failed because the blockchain... packed up and left apparently.")
                 print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
 
                 client.close()
                 await client.await_closed()
                 return None
+            elif sync_height_2 > peak_peer_height_2:
+                print(f"Peers are behind. Height: {sync_height_2} / {peak_peer_height_2}")
 
-            print(f"Measurement 2 Performed. Height: {measurement_2}")
+                client.close()
+                await client.await_closed()
+                return None
+            elif sync_height_2 == peak_peer_height_2:
+                print(f"Peers have stalled. Height: {sync_height_2}")
+
+                client.close()
+                await client.await_closed()
+                return None
+
+            print(f"Measurement 2 Performed. Height: {sync_height_2} / {peak_peer_height_2} (", end="")
+
+            if is_synced_2:
+                print("Synced)")
+            else:
+                print("Not Synced)")
 
             #Calculation
 
-            block_range = measurement_2 - measurement_1
-            time_range = end_time - start_time #Seconds
-
-            print(f"Measurements completed in {time_range:.2f} seconds across {block_range} blocks.")
+            blocks_synced = sync_height_2 - sync_height_1
+            chain_growth = peak_peer_height_2 - peak_peer_height_1
+            time_range = time_2 - time_1 #Seconds
 
             print("") #Blank Line
 
-            if not sync_status_1 and sync_status_2:
-                print(f"Node fully synced before speed test could complete. Height: {measurement_2}")
+            print(f"Measurements completed in {time_range:.2f} seconds across {blocks_synced} blocks.")
 
-                client.close()
-                await client.await_closed()
-                return None
-            elif sync_status_1 and not sync_status_2:
-                print(f"Node fell out of sync before speed test could complete. Height: {measurement_2}")
-
-                client.close()
-                await client.await_closed()
-                return None
-            elif block_range == 0:
-                if measurement_2 == peak_peer_height:
-                    print(f"Peers Stalled. Peak height: {measurement_2}")
-                else:
-                    print(f"No Movement Detected. Peak height: {measurement_2}")
-
-                client.close()
-                await client.await_closed()
-                return None
-
-            blocks_per_minute = block_range / (time_range / 60)
-            time_to_full_sync = (peak_peer_height - measurement_2) / blocks_per_minute #Minutes
-
-            if sync_status_1 and sync_status_2:
-                print(f"Network Block Rate: {blocks_per_minute:.2f} Blocks/Minute")
+            if chain_growth >= 0:
+                print(f"Network added {chain_growth} blocks during the measurement.")
             else:
-                print(f"Syncing Speed: {blocks_per_minute:.2f} Blocks/Minute")
-                print(f"Estimated Time to Full Sync ({peak_peer_height}): {format_minutes(round(time_to_full_sync))}")
+                print(f"Highest peer disconnected during measurement. Height: {peak_peer_height_2} => {peak_peer_height_1}")
+
+                client.close()
+                await client.await_closed()
+                return None
+
+            print("") #Blank Line
+
+            if not is_synced_1 and is_synced_2:
+                print(f"Node fully synced before speed test could complete. Height: {sync_height_2}")
+
+                client.close()
+                await client.await_closed()
+                return None
+            elif is_synced_1 and not is_synced_2:
+                print(f"Node fell out of sync before speed test could complete. Height: {sync_height_2}")
+
+                client.close()
+                await client.await_closed()
+                return None
+            elif blocks_synced == 0:
+                if sync_height_2 == peak_peer_height_2:
+                    print(f"Peers have stalled. Height: {sync_height_2}")
+                else:
+                    print(f"No Movement Detected. Height: {sync_height_2}")
+
+                client.close()
+                await client.await_closed()
+                return None
+
+            time_range /= 60 #Convert to Minutes
+            network_block_rate = chain_growth / time_range #Blocks per Minute
+
+            if is_synced_1 and is_synced_2:
+                print(f"Network Block Rate: {network_block_rate:.2f} Blocks/Minute")
+            else:
+                sync_speed = blocks_synced / time_range #Blocks per Minute
+                relative_speed = sync_speed - network_block_rate #Blocks per Minute
+                time_to_full_sync = (peak_peer_height_2 - sync_height_2) / relative_speed #Minutes
+
+                print(f"Syncing Speed (minus network block rate): {sync_speed:.2f} Blocks/Minute")
+                print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line
             if show_connections:
