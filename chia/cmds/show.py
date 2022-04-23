@@ -287,7 +287,7 @@ async def show_async(
                 await client.await_closed()
                 return None
             elif blocks_synced == 0:
-                if sync_height_2 == peak_peer_height_2:
+                if sync_height_2 == peak_peer_height_2 and not is_synced_2:
                     print(f"Peers have stalled. Height: {sync_height_2}")
                 else:
                     print(f"No Movement Detected. Height: {sync_height_2}")
