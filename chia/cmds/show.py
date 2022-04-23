@@ -161,7 +161,13 @@ async def show_async(
             measurement_1 = get_current_sync_height(blockchain_state)
             start_time = time.time() #Current Time in Microseconds
 
-            if measurement_1 == -1:
+            connections = await client.get_connections()
+            peak_peer_height = get_peak_peer_height(connections)
+
+            if peak_peer_height == -1:
+                print(f"Not connected to peers. Height: {current_sync_height}")
+                return end_command()
+            elif measurement_1 == -1:
                 print("There is no blockchain found yet. Try again shortly")
                 return None
             elif measurement_1 == -2:
@@ -186,7 +192,10 @@ async def show_async(
             connections = await client.get_connections()
             peak_peer_height = get_peak_peer_height(connections)
 
-            if measurement_2 == -1:
+            if peak_peer_height == -1:
+                print(f"Connection to peers lost. Height: {current_sync_height}")
+                return end_command()
+            elif measurement_2 == -1:
                 print("Measurement 2 failed because the blockchain was... lost? What?")
                 return end_command()
             elif measurement_2 == -2:
@@ -216,6 +225,7 @@ async def show_async(
                     print(f"Peers Stalled. Peak height: {measurement_2}")
                 else:
                     print(f"No Movement Detected. Peak height: {measurement_2}")
+
                 return end_command()
 
             blocks_per_minute = block_range / (time_range / 60)
