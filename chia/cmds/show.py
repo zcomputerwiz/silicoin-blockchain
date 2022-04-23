@@ -184,7 +184,7 @@ async def show_async(
                 client.close()
                 await client.await_closed()
                 return None
-            elif sync_height_1 == peak_peer_height_1:
+            elif sync_height_1 == peak_peer_height_1 and not is_synced_1:
                 print(f"Peers have stalled. Height: {sync_height_1}")
 
                 client.close()
@@ -239,7 +239,7 @@ async def show_async(
                 client.close()
                 await client.await_closed()
                 return None
-            elif sync_height_2 == peak_peer_height_2:
+            elif sync_height_2 == peak_peer_height_2 and not is_synced_2:
                 print(f"Peers have stalled. Height: {sync_height_2}")
 
                 client.close()
@@ -264,7 +264,7 @@ async def show_async(
             print(f"Measurements completed in {time_range:.2f} seconds across {blocks_synced} blocks.")
 
             if peer_blocks_synced >= 0:
-                print(f"Peers synced {peer_blocks_synced} blocks during the measurement.")
+                print(f"Peers synced {peer_blocks_synced    } blocks during the measurement.")
             else:
                 print(f"Highest peer disconnected during measurement. Height: {peak_peer_height_2} => {peak_peer_height_1}")
 
