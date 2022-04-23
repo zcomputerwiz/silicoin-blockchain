@@ -162,7 +162,7 @@ async def show_async(
             peak_peer_height = get_peak_peer_height(connections)
 
             if peak_peer_height == -1:
-                print(f"Not connected to peers. Height: {current_sync_height}")
+                print(f"Not connected to peers.")
 
                 client.close()
                 await client.await_closed()
@@ -196,7 +196,7 @@ async def show_async(
             peak_peer_height = get_peak_peer_height(connections)
 
             if peak_peer_height == -1:
-                print(f"Connection to peers lost. Height: {current_sync_height}")
+                print(f"Connection to peers lost.")
 
                 client.close()
                 await client.await_closed()
