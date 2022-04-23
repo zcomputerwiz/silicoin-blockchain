@@ -306,7 +306,7 @@ async def show_async(
                 relative_speed = sync_speed - peer_block_rate #Blocks per Minute
                 time_to_full_sync = (peak_peer_height_2 - sync_height_2) / relative_speed #Minutes
 
-                print(f"Syncing Speed (minus peer block rate): {sync_speed:.2f} Blocks/Minute")
+                print(f"Syncing Speed (minus peer sync rate): {sync_speed:.2f} Blocks/Minute")
                 print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line
