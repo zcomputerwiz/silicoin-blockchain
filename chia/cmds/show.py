@@ -88,7 +88,10 @@ async def show_async(
                     if current_sync_height == peak_peer_height:
                         print(f"Current Status: Peers Stalled. Peak height: {current_sync_height}")
                     else:
-                        print(f"Current Status: Not Synced. Peak height: {current_sync_height}/{peak_peer_height}")
+                        print(
+                            f"Current Status: Not Synced. Peak height: {current_sync_height}/{peak_peer_height} "
+                            f"({peak_peer_height - current_sync_height} behind)"
+                        )
             else:
                 print("\nSearching for an initial chain\n")
                 print("You may be able to expedite with 'sit show -a host:port' using a known node.\n")
