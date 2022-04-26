@@ -382,7 +382,7 @@ async def get_est_staking_factor(total_plot_size, total_staking_balance) -> Deci
     if total_plot_size == 0:
         return Decimal(1)
 
-    # convert farmer space from byte to T unit
+    # convert farmer space from bytes to TB
     converted_plot_size = total_plot_size / 1000000000000
 
     if total_staking_balance >= converted_plot_size:
