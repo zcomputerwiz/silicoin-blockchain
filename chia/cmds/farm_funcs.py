@@ -20,6 +20,7 @@ from chia.util.misc import format_bytes, format_minutes
 from chia.util.network import is_localhost
 from chia.util.keychain import Keychain
 from chia.wallet.derive_keys import master_sk_to_farmer_sk
+from chia.consensus.default_constants import DEFAULT_CONSTANTS
 
 SECONDS_PER_BLOCK = (24 * 3600) / 4608
 
@@ -253,6 +254,12 @@ async def summary(
         capacities = defaultdict(int)
         staking_factors = defaultdict(int)
 
+    if blockchain_state is not None and blockchain_state["space"] is not None:
+        effective_netspace = blockchain_state["space"]
+        minimal_staking = Decimal(effective_netspace) / (DEFAULT_CONSTANTS.STAKING_ESTIMATE_BLOCK_RANGE * 100)
+    else:
+        effective_netspace = 0
+
     if all_harvesters is not None:
         harvesters_local: dict = {}
         harvesters_remote: dict = {}
@@ -327,39 +334,45 @@ async def summary(
             print(format_bytes(address_capacity), end="")
             print(")")
 
-            # query balance
-            balance = await get_ph_balance(rpc_port, ph)
-            balance /= Decimal(10 ** 12)
+            if blockchain_state is not None:
+                # query balance
+                balance = await get_ph_balance(rpc_port, ph)
+                balance /= Decimal(10 ** 12)
 
-            sf = await get_est_staking_factor(PlotStats.capacities[ph], balance)
-            PlotStats.staking_factors[ph] = sf
+                print(f"    Balance: {balance} SIT")
 
-            print(f"    Balance: {balance} SIT")
-            print(f"    Estimated staking factor: {sf} (effectively ", end="")
-            print(format_bytes(int(address_capacity / float(sf))), end="")
-            print(")")
+                if effective_netspace is not None:
+                    sf = await get_est_staking_factor(PlotStats.capacities[ph], balance, effective_netspace)
+                    PlotStats.staking_factors[ph] = sf
+
+                    print(f"    Estimated staking factor: {sf} (effectively ", end="")
+                    print(format_bytes(int(address_capacity / float(sf))), end="")
+                    print(")")
     else:
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
 
     if blockchain_state is not None:
         print("Estimated effective network space: ", end="")
-        print(format_bytes(blockchain_state["space"]))
+        print(format_bytes(effective_netspace))
     else:
         print("Estimated effective network space: Unknown")
 
     minutes = -1
     est_plot_size = 0
     if blockchain_state is not None and all_harvesters is not None:
-        for ph, capacity in PlotStats.capacities.items():
-            est_plot_size += capacity / float(PlotStats.staking_factors[ph])
+        if effective_netspace is not None:
+            for ph, capacity in PlotStats.capacities.items():
+                est_plot_size += capacity / float(PlotStats.staking_factors[ph])
+        else:
+            est_plot_size = PlotStats.total_plot_size
 
-        proportion = est_plot_size / blockchain_state["space"] if blockchain_state["space"] else -1
+        proportion = est_plot_size / effective_netspace if effective_netspace else -1
         minutes = int((await get_average_block_time(rpc_port) / 60) / proportion) if proportion else -1
 
     if all_harvesters is not None and PlotStats.total_plots == 0:
         print("Expected time to win: Never (no plots)")
-    else:
+    elif blockchain_state is not None:
         print("Estimated effective farm capacity: ", end="")
         print(format_bytes(int(est_plot_size)))
 
@@ -376,18 +389,21 @@ async def summary(
         print("Note: log into your key using 'sit wallet show' to see rewards for each key")
 
 
-async def get_est_staking_factor(total_plot_size, total_staking_balance) -> Decimal:
+async def get_est_staking_factor(total_plot_size, staking_balance, minimal_staking) -> Decimal:
 
     sf = 0
-    if total_plot_size == 0:
+
+    if minimal_staking == 0 or staking_balance < 0:
+        return Decimal(20)
+    elif total_plot_size == 0:
         return Decimal(1)
 
     # convert farmer space from bytes to TB
     converted_plot_size = total_plot_size / 1000000000000
 
-    if total_staking_balance >= converted_plot_size:
-        sf = Decimal("0.5") + Decimal(1) / (Decimal(total_staking_balance) / Decimal(converted_plot_size) + Decimal(1))
+    if staking_balance >= converted_plot_size:
+        sf = Decimal("0.5") + Decimal(1) / (Decimal(staking_balance) / Decimal(converted_plot_size) + Decimal(1))
     else:
-        sf = Decimal("0.05") + Decimal(1) / (Decimal(total_staking_balance) / Decimal(converted_plot_size) + Decimal("0.05"))
+        sf = Decimal("0.05") + Decimal(1) / (Decimal(staking_balance) / Decimal(converted_plot_size) + Decimal("0.05"))
 
     return round(sf, 2)
