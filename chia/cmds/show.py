@@ -69,12 +69,12 @@ async def show_async(
             num_blocks: int = 10
 
             if synced:
-                print("Current Status: Full Node Synced")
+                print("Current Blockchain Status: Full Node Synced")
                 print("\nPeak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None and sync_mode:
                 sync_max_block = blockchain_state["sync"]["sync_tip_height"]
                 sync_current_block = blockchain_state["sync"]["sync_progress_height"]
-                print(f"Current Status: Syncing {sync_current_block}/{sync_max_block}.")
+                print(f"Current Status: Syncing {sync_current_block} / {sync_max_block}.")
                 print("Peak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None:
                 current_sync_height = peak.height
@@ -89,7 +89,7 @@ async def show_async(
                         print(f"Current Status: Peers Stalled. Peak height: {current_sync_height}")
                     else:
                         print(
-                            f"Current Status: Not Synced. Peak height: {current_sync_height}/{peak_peer_height} "
+                            f"Current Status: Not Synced. Peak height: {current_sync_height} / {peak_peer_height} "
                             f"({peak_peer_height - current_sync_height} behind)"
                         )
             else:
@@ -196,10 +196,10 @@ async def show_async(
 
             print(f"Measurement 1 performed. Height: {sync_height_1} / {peak_peer_height_1} (", end="")
 
-            if is_synced_1:
+            if not is_synced_1:
                 print("synced)")
             else:
-                print("not synced)")
+                print(f"not synced, {peak_peer_height_1 - sync_height_1} behind)")
 
             #Delay
 
@@ -251,10 +251,10 @@ async def show_async(
 
             print(f"Measurement 2 performed. Height: {sync_height_2} / {peak_peer_height_2} (", end="")
 
-            if is_synced_2:
+            if not is_synced_2:
                 print("synced)")
             else:
-                print("not synced)")
+                print(f"not synced, {peak_peer_height_2 - sync_height_2} behind)")
 
             #Calculation
 
@@ -267,7 +267,10 @@ async def show_async(
             print(f"Measurements completed in {time_range:.2f} seconds across {blocks_synced} blocks.")
 
             if peer_blocks_synced >= 0:
-                print(f"Peers synced {peer_blocks_synced} blocks during the measurement.")
+                time_range /= 60 #Convert to Minutes
+                peer_sync_speed = peer_blocks_synced / time_range #Blocks per Minute
+
+                print(f"Peers synced {peer_blocks_synced} blocks during the measurement ({peer_sync_speed:.2f} blocks/minute).")
             else:
                 print(f"Highest peer disconnected during measurement. Height: {peak_peer_height_2} => {peak_peer_height_1}")
 
@@ -299,17 +302,14 @@ async def show_async(
                 await client.await_closed()
                 return None
 
-            time_range /= 60 #Convert to Minutes
-            peer_sync_speed = peer_blocks_synced / time_range #Blocks per Minute
-
             if is_synced_1 and is_synced_2:
-                print(f"Peer Block Rate: {peer_sync_speed:.2f} Blocks/Minute")
+                print(f"Peer Block Rate: {peer_sync_speed:.2f} blocks/minute")
             else:
                 sync_speed = blocks_synced / time_range #Blocks per Minute
                 relative_speed = sync_speed - peer_sync_speed #Blocks per Minute
                 time_to_full_sync = (peak_peer_height_2 - sync_height_2) / relative_speed #Minutes
 
-                print(f"Syncing Speed (minus peer sync speed): {relative_speed:.2f} Blocks/Minute")
+                print(f"Syncing Speed (minus peer sync speed): {relative_speed:.2f} blocks/minute")
                 print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line

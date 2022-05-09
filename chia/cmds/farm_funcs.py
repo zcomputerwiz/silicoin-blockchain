@@ -326,28 +326,29 @@ async def summary(
         for ph, plot_count in PlotStats.staking_addresses.items():
             print(f"  {encode_puzzle_hash(ph, address_prefix)}")
 
-            print(f"    Fingerprint: {PlotStats.fingerprints[ph]}")
+            print(f"    FP: {PlotStats.fingerprints[ph]}, ", end="")
 
             address_capacity = PlotStats.capacities[ph]
-
-            print(f"    Plots: {plot_count} (", end="")
+            print(f"Plots: {plot_count} (", end="")
             print(format_bytes(address_capacity), end="")
-            print(")")
+            print(")", end="")
 
             if blockchain_state is not None:
                 # query balance
                 balance = await get_ph_balance(rpc_port, ph)
                 balance /= Decimal(10 ** 12)
 
-                print(f"    Balance: {balance} SIT")
+                print(f", Bal: {balance} SIT", end="")
 
                 if effective_netspace is not None:
                     sf = await get_est_staking_factor(PlotStats.capacities[ph], balance, effective_netspace)
                     PlotStats.staking_factors[ph] = sf
 
-                    print(f"    Estimated staking factor: {sf} (effectively ", end="")
+                    print(f", ESF: {sf} (effectively ", end="")
                     print(format_bytes(int(address_capacity / float(sf))), end="")
-                    print(")")
+                    print(")", end="")
+
+            print("") #Line Break
     else:
         print("Plot count: Unknown")
         print("Total size of plots: Unknown")
