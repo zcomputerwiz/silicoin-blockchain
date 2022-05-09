@@ -69,12 +69,12 @@ async def show_async(
             num_blocks: int = 10
 
             if synced:
-                print("Current Blockchain Status: Full Node Synced")
+                print("Current Status: Full Node Synced")
                 print("\nPeak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None and sync_mode:
                 sync_max_block = blockchain_state["sync"]["sync_tip_height"]
                 sync_current_block = blockchain_state["sync"]["sync_progress_height"]
-                print(f"Current Status: Syncing {sync_current_block} / {sync_max_block}.")
+                print(f"Current Blockchain Status: Syncing {sync_current_block}/{sync_max_block}.")
                 print("Peak: Hash:", peak.header_hash if peak is not None else "")
             elif peak is not None:
                 current_sync_height = peak.height
@@ -196,7 +196,7 @@ async def show_async(
 
             print(f"Measurement 1 performed. Height: {sync_height_1} / {peak_peer_height_1} (", end="")
 
-            if not is_synced_1:
+            if is_synced_1:
                 print("synced)")
             else:
                 print(f"not synced, {peak_peer_height_1 - sync_height_1} behind)")
@@ -251,7 +251,7 @@ async def show_async(
 
             print(f"Measurement 2 performed. Height: {sync_height_2} / {peak_peer_height_2} (", end="")
 
-            if not is_synced_2:
+            if is_synced_2:
                 print("synced)")
             else:
                 print(f"not synced, {peak_peer_height_2 - sync_height_2} behind)")
