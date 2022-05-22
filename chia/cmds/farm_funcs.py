@@ -394,7 +394,7 @@ async def get_est_staking_factor(total_plot_size, staking_balance, minimal_staki
 
     sf = 0
 
-    if minimal_staking == 0 or staking_balance < 0:
+    if minimal_staking == 0 or staking_balance < minimal_staking:
         return Decimal(20)
     elif total_plot_size == 0:
         return Decimal(1)
