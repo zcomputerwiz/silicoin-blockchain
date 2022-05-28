@@ -257,6 +257,7 @@ async def summary(
     if blockchain_state is not None and blockchain_state["space"] is not None:
         effective_netspace = blockchain_state["space"]
         minimal_staking = Decimal(effective_netspace) / (DEFAULT_CONSTANTS.STAKING_ESTIMATE_BLOCK_RANGE * 100)
+        minimal_staking /= Decimal(10 ** 12)
     else:
         effective_netspace = 0
 
@@ -341,7 +342,7 @@ async def summary(
                 print(f", Bal: {balance} SIT", end="")
 
                 if effective_netspace is not None:
-                    sf = await get_est_staking_factor(PlotStats.capacities[ph], balance, effective_netspace)
+                    sf = await get_est_staking_factor(PlotStats.capacities[ph], balance, minimal_staking)
                     PlotStats.staking_factors[ph] = sf
 
                     print(f", ESF: {sf} (effectively ", end="")
