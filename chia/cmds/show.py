@@ -164,6 +164,7 @@ async def show_async(
 
             connections = await client.get_connections()
             peak_peer_height_1 = get_peak_peer_height(connections)
+            blocks_behind_1 = None
 
             if peak_peer_height_1 == -1:
                 print(f"Not connected to peers.")
@@ -217,6 +218,7 @@ async def show_async(
 
             connections = await client.get_connections()
             peak_peer_height_2 = get_peak_peer_height(connections)
+            blocks_behind_2 = None
 
             if peak_peer_height_2 == -1:
                 print(f"Connection to peers lost.")
