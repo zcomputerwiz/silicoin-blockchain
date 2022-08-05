@@ -164,7 +164,7 @@ async def show_async(
 
             connections = await client.get_connections()
             peak_peer_height_1 = get_peak_peer_height(connections)
-            blocks_behind_1 = None
+            blocks_behind_1 = 0
 
             if peak_peer_height_1 == -1:
                 print(f"Not connected to peers.")
@@ -218,7 +218,7 @@ async def show_async(
 
             connections = await client.get_connections()
             peak_peer_height_2 = get_peak_peer_height(connections)
-            blocks_behind_2 = None
+            blocks_behind_2 = 0
 
             if peak_peer_height_2 == -1:
                 print(f"Connection to peers lost.")
@@ -312,9 +312,10 @@ async def show_async(
             else:
                 gap_closure = blocks_behind_2 - blocks_behind_1
                 gap_closing_speed = gap_closure / time_range #Blocks per Minute
-                time_to_full_sync = (peak_peer_height_2 - sync_height_2) / relative_speed #Minutes
+                time_to_full_sync = (peak_peer_height_2 - sync_height_2) / gap_closing_speed #Minutes
 
-                print(f"Gap Closing Speed: {relative_speed:.2f} blocks/minute")
+                print(f"Gap Closure: {gap_closure}")
+                print(f"Gap Closing Speed: {gap_closing_speed:.2f} blocks/minute")
                 print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line
