@@ -85,7 +85,7 @@ async def show_async(
                 if peak_peer_height == -1:
                     print(f"Current Status: Not Connected to Peers. Peak height: {current_sync_height}")
                 else:
-                    if current_sync_height == peak_peer_height:
+                    if current_sync_height >= peak_peer_height:
                         print(f"Current Status: Peers Stalled. Peak height: {current_sync_height}")
                     else:
                         print(
@@ -199,7 +199,8 @@ async def show_async(
             if is_synced_1:
                 print("synced)")
             else:
-                print(f"not synced, {peak_peer_height_1 - sync_height_1} behind)")
+                blocks_behind_1 = peak_peer_height_1 - sync_height_1
+                print(f"not synced, {blocks_behind_1} behind)")
 
             #Delay
 
@@ -254,12 +255,14 @@ async def show_async(
             if is_synced_2:
                 print("synced)")
             else:
-                print(f"not synced, {peak_peer_height_2 - sync_height_2} behind)")
+                blocks_behind_2 = peak_peer_height_2 - sync_height_2
+                print(f"not synced, {blocks_behind_2} behind)")
 
             #Calculation
 
             blocks_synced = sync_height_2 - sync_height_1
             peer_blocks_synced = peak_peer_height_2 - peak_peer_height_1
+            gap_closure = blocks_behind_2 - blocks_behind_1
             time_range = time_2 - time_1 #Seconds
 
             print("") #Blank Line
@@ -287,7 +290,7 @@ async def show_async(
                 await client.await_closed()
                 return None
             elif is_synced_1 and not is_synced_2:
-                print(f"Node fell out of sync before speed test could complete. Height: {sync_height_2}")
+                print(f"Node fell out of sync on second measurement. Height: {sync_height_2}")
 
                 client.close()
                 await client.await_closed()
@@ -303,13 +306,13 @@ async def show_async(
                 return None
 
             if is_synced_1 and is_synced_2:
-                print(f"Peer Block Rate: {peer_sync_speed:.2f} blocks/minute")
+                print(f"Measured Peer Block Rate: {peer_sync_speed:.2f} blocks/minute")
+                print("Silicoin's target block rate is 3.2 blocks/minute.")
             else:
-                sync_speed = blocks_synced / time_range #Blocks per Minute
-                relative_speed = sync_speed - peer_sync_speed #Blocks per Minute
+                gap_closing_speed = gap_closure / time_range #Blocks per Minute
                 time_to_full_sync = (peak_peer_height_2 - sync_height_2) / relative_speed #Minutes
 
-                print(f"Syncing Speed (minus peer sync speed): {relative_speed:.2f} blocks/minute")
+                print(f"Gap Closing Speed: {relative_speed:.2f} blocks/minute")
                 print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
 
             # if called together with show_connections, leave a blank line
