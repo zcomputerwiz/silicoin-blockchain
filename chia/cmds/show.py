@@ -310,13 +310,17 @@ async def show_async(
                 print(f"Measured Peer Block Rate: {peer_sync_speed:.2f} blocks/minute")
                 print("Silicoin's target block rate is 3.2 blocks/minute.")
             else:
-                gap_closure = blocks_behind_2 - blocks_behind_1
-                gap_closing_speed = gap_closure / time_range #Blocks per Minute
-                time_to_full_sync = (peak_peer_height_2 - sync_height_2) / gap_closing_speed #Minutes
+                gap_closure = blocks_behind_1 - blocks_behind_2
+                
+                if gap_closure >= 0:
+                    gap_closing_speed = gap_closure / time_range #Blocks per Minute
+                    time_to_full_sync = (peak_peer_height_2 - sync_height_2) / gap_closing_speed #Minutes
 
-                print(f"Gap Closure: {gap_closure}")
-                print(f"Gap Closing Speed: {gap_closing_speed:.2f} blocks/minute")
-                print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
+                    print(f"Gap Closure: {gap_closure}")
+                    print(f"Gap Closing Speed: {gap_closing_speed:.2f} blocks/minute")
+                    print(f"Estimated Time to Full Sync: {format_minutes(round(time_to_full_sync))}")
+                else:
+                    print("Second blocks behind measurement was higher, can't estimate time to full sync.")
 
             # if called together with show_connections, leave a blank line
             if show_connections:
