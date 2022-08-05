@@ -264,7 +264,6 @@ async def show_async(
 
             blocks_synced = sync_height_2 - sync_height_1
             peer_blocks_synced = peak_peer_height_2 - peak_peer_height_1
-            gap_closure = blocks_behind_2 - blocks_behind_1
             time_range = time_2 - time_1 #Seconds
 
             print("") #Blank Line
@@ -311,6 +310,7 @@ async def show_async(
                 print(f"Measured Peer Block Rate: {peer_sync_speed:.2f} blocks/minute")
                 print("Silicoin's target block rate is 3.2 blocks/minute.")
             else:
+                gap_closure = blocks_behind_2 - blocks_behind_1
                 gap_closing_speed = gap_closure / time_range #Blocks per Minute
                 time_to_full_sync = (peak_peer_height_2 - sync_height_2) / relative_speed #Minutes
 
