@@ -314,7 +314,7 @@ async def show_async(
                 
                 if gap_closure >= 0:
                     gap_closing_speed = gap_closure / time_range #Blocks per Minute
-                    time_to_full_sync = (peak_peer_height_2 - sync_height_2) / gap_closing_speed #Minutes
+                    time_to_full_sync = blocks_behind_2 / gap_closing_speed #Minutes
 
                     print(f"Gap Closure: {gap_closure}")
                     print(f"Gap Closing Speed: {gap_closing_speed:.2f} blocks/minute")
